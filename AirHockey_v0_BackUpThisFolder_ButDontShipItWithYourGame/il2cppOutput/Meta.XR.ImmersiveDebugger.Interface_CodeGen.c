@@ -1,0 +1,174 @@
+﻿#include "pch-c.h"
+#ifndef _MSC_VER
+# include <alloca.h>
+#else
+# include <malloc.h>
+#endif
+
+
+#include "codegen/il2cpp-codegen-metadata.h"
+
+
+
+
+
+// 0x00000001 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::add_GetCameraHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate)
+extern void CustomIntegrationConfig_add_GetCameraHandler_m2CB915911752F24CE3A0DD370DBBF04BF4153C46 (void);
+// 0x00000002 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::remove_GetCameraHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate)
+extern void CustomIntegrationConfig_remove_GetCameraHandler_m3819BC074331701ED3D3EC09BCCC1A5468D2F2EA (void);
+// 0x00000003 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::add_GetLeftControllerTransformHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate)
+extern void CustomIntegrationConfig_add_GetLeftControllerTransformHandler_mF8A8968A94AA936332633981CE73A77E961B23FC (void);
+// 0x00000004 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::remove_GetLeftControllerTransformHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate)
+extern void CustomIntegrationConfig_remove_GetLeftControllerTransformHandler_m86C114FAC4CC28DB0040055A72621458AF7487B1 (void);
+// 0x00000005 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::add_GetRightControllerTransformHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate)
+extern void CustomIntegrationConfig_add_GetRightControllerTransformHandler_m87B72E57101D51268BDCF2055F5A4FDE98DF34E7 (void);
+// 0x00000006 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::remove_GetRightControllerTransformHandler(Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate)
+extern void CustomIntegrationConfig_remove_GetRightControllerTransformHandler_mA6066A8091DEA0FF7254730CE55DDB76E73C46E5 (void);
+// 0x00000007 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::SetupAllConfig(Meta.XR.ImmersiveDebugger.ICustomIntegrationConfig)
+extern void CustomIntegrationConfig_SetupAllConfig_m44E2A1766C87194074F81B59D3835F8F38194993 (void);
+// 0x00000008 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::ClearAllConfig(Meta.XR.ImmersiveDebugger.ICustomIntegrationConfig)
+extern void CustomIntegrationConfig_ClearAllConfig_mD56C62AD1DD7E8DD0FE78F7100C238E851888F9C (void);
+// 0x00000009 UnityEngine.Camera Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::GetCamera()
+extern void CustomIntegrationConfig_GetCamera_mEDE04EC5F6A566321B919F4A733F84D6F10A3454 (void);
+// 0x0000000A UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::GetLeftControllerTransform()
+extern void CustomIntegrationConfig_GetLeftControllerTransform_m74977FE2738446FECD0D616E0CA2F8788D4CF891 (void);
+// 0x0000000B UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig::GetRightControllerTransform()
+extern void CustomIntegrationConfig_GetRightControllerTransform_m85D60EA264E5EBA3D5BD2A09F34C9852958DF58E (void);
+// 0x0000000C System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate::.ctor(System.Object,System.IntPtr)
+extern void GetCameraDelegate__ctor_mBE95805D1E07B8515BB1A1BEC6E722FA6048140D (void);
+// 0x0000000D UnityEngine.Camera Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate::Invoke()
+extern void GetCameraDelegate_Invoke_mF0C2BD16291F0805BBD5D813330332389CF75824 (void);
+// 0x0000000E System.IAsyncResult Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate::BeginInvoke(System.AsyncCallback,System.Object)
+extern void GetCameraDelegate_BeginInvoke_mE9E25AA56311EF957EBC18156E9A5135AB26CDF9 (void);
+// 0x0000000F UnityEngine.Camera Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetCameraDelegate::EndInvoke(System.IAsyncResult)
+extern void GetCameraDelegate_EndInvoke_mD131D65511047387210FB3C809F61257AA6A947F (void);
+// 0x00000010 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate::.ctor(System.Object,System.IntPtr)
+extern void GetLeftControllerTransformDelegate__ctor_m47B5A3B60F77255EE4ED73F869D0505B86FB3649 (void);
+// 0x00000011 UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate::Invoke()
+extern void GetLeftControllerTransformDelegate_Invoke_mBDD7372DA04E645773D618511F3EA0BD4F84DA6C (void);
+// 0x00000012 System.IAsyncResult Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate::BeginInvoke(System.AsyncCallback,System.Object)
+extern void GetLeftControllerTransformDelegate_BeginInvoke_mDD3FC86531E7771FB1C1665165728A94C12EBC6A (void);
+// 0x00000013 UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetLeftControllerTransformDelegate::EndInvoke(System.IAsyncResult)
+extern void GetLeftControllerTransformDelegate_EndInvoke_m837CB988C9C82D71C7BB6F02170CAC63B22D3838 (void);
+// 0x00000014 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate::.ctor(System.Object,System.IntPtr)
+extern void GetRightControllerTransformDelegate__ctor_mA50C965B2E8F5E1CDE853B7947B870191C52ECB7 (void);
+// 0x00000015 UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate::Invoke()
+extern void GetRightControllerTransformDelegate_Invoke_mA3E03A6AC793BBE9DC6B974E93429F6F70635CA9 (void);
+// 0x00000016 System.IAsyncResult Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate::BeginInvoke(System.AsyncCallback,System.Object)
+extern void GetRightControllerTransformDelegate_BeginInvoke_mEAC2B78E3E654314CBCA928BD7258629930C6729 (void);
+// 0x00000017 UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfig/GetRightControllerTransformDelegate::EndInvoke(System.IAsyncResult)
+extern void GetRightControllerTransformDelegate_EndInvoke_m3C9814263CB05AD4AF37D9E0735334EDB9CBCBC7 (void);
+// 0x00000018 UnityEngine.Camera Meta.XR.ImmersiveDebugger.ICustomIntegrationConfig::GetCamera()
+// 0x00000019 UnityEngine.Transform Meta.XR.ImmersiveDebugger.ICustomIntegrationConfig::GetLeftControllerTransform()
+// 0x0000001A UnityEngine.Transform Meta.XR.ImmersiveDebugger.ICustomIntegrationConfig::GetRightControllerTransform()
+// 0x0000001B System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::Awake()
+extern void CustomIntegrationConfigBase_Awake_mE343DD448130865AD3706C93DFBB62E0D5F4CD78 (void);
+// 0x0000001C System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::OnDestroy()
+extern void CustomIntegrationConfigBase_OnDestroy_mB07679E1AA9B42D79B1E3D30192010B56F0640CC (void);
+// 0x0000001D UnityEngine.Camera Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::GetCamera()
+extern void CustomIntegrationConfigBase_GetCamera_m00168AB60C2B28A6286AF3D29FA7ED81F24E4EAB (void);
+// 0x0000001E UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::GetLeftControllerTransform()
+extern void CustomIntegrationConfigBase_GetLeftControllerTransform_mE831FB4E8953AC59121633BEB6A2C86A1E968E92 (void);
+// 0x0000001F UnityEngine.Transform Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::GetRightControllerTransform()
+extern void CustomIntegrationConfigBase_GetRightControllerTransform_m91C228CA4277A2B8DBEAE4131AD2568A9F033220 (void);
+// 0x00000020 System.Void Meta.XR.ImmersiveDebugger.CustomIntegrationConfigBase::.ctor()
+extern void CustomIntegrationConfigBase__ctor_mE96705B31E26A03C2FEDA28BCE42594BA3E59993 (void);
+// 0x00000021 System.Void Meta.XR.ImmersiveDebugger.DebugMember::.ctor(Meta.XR.ImmersiveDebugger.DebugColor)
+extern void DebugMember__ctor_m23524BF378E4EA831123889D02C9A659855D65EA (void);
+// 0x00000022 System.Void Meta.XR.ImmersiveDebugger.DebugMember::.cctor()
+extern void DebugMember__cctor_mCDE94112D1AD0353A21B35FC7D2A1DD84FA62566 (void);
+static Il2CppMethodPointer s_methodPointers[34] = 
+{
+	CustomIntegrationConfig_add_GetCameraHandler_m2CB915911752F24CE3A0DD370DBBF04BF4153C46,
+	CustomIntegrationConfig_remove_GetCameraHandler_m3819BC074331701ED3D3EC09BCCC1A5468D2F2EA,
+	CustomIntegrationConfig_add_GetLeftControllerTransformHandler_mF8A8968A94AA936332633981CE73A77E961B23FC,
+	CustomIntegrationConfig_remove_GetLeftControllerTransformHandler_m86C114FAC4CC28DB0040055A72621458AF7487B1,
+	CustomIntegrationConfig_add_GetRightControllerTransformHandler_m87B72E57101D51268BDCF2055F5A4FDE98DF34E7,
+	CustomIntegrationConfig_remove_GetRightControllerTransformHandler_mA6066A8091DEA0FF7254730CE55DDB76E73C46E5,
+	CustomIntegrationConfig_SetupAllConfig_m44E2A1766C87194074F81B59D3835F8F38194993,
+	CustomIntegrationConfig_ClearAllConfig_mD56C62AD1DD7E8DD0FE78F7100C238E851888F9C,
+	CustomIntegrationConfig_GetCamera_mEDE04EC5F6A566321B919F4A733F84D6F10A3454,
+	CustomIntegrationConfig_GetLeftControllerTransform_m74977FE2738446FECD0D616E0CA2F8788D4CF891,
+	CustomIntegrationConfig_GetRightControllerTransform_m85D60EA264E5EBA3D5BD2A09F34C9852958DF58E,
+	GetCameraDelegate__ctor_mBE95805D1E07B8515BB1A1BEC6E722FA6048140D,
+	GetCameraDelegate_Invoke_mF0C2BD16291F0805BBD5D813330332389CF75824,
+	GetCameraDelegate_BeginInvoke_mE9E25AA56311EF957EBC18156E9A5135AB26CDF9,
+	GetCameraDelegate_EndInvoke_mD131D65511047387210FB3C809F61257AA6A947F,
+	GetLeftControllerTransformDelegate__ctor_m47B5A3B60F77255EE4ED73F869D0505B86FB3649,
+	GetLeftControllerTransformDelegate_Invoke_mBDD7372DA04E645773D618511F3EA0BD4F84DA6C,
+	GetLeftControllerTransformDelegate_BeginInvoke_mDD3FC86531E7771FB1C1665165728A94C12EBC6A,
+	GetLeftControllerTransformDelegate_EndInvoke_m837CB988C9C82D71C7BB6F02170CAC63B22D3838,
+	GetRightControllerTransformDelegate__ctor_mA50C965B2E8F5E1CDE853B7947B870191C52ECB7,
+	GetRightControllerTransformDelegate_Invoke_mA3E03A6AC793BBE9DC6B974E93429F6F70635CA9,
+	GetRightControllerTransformDelegate_BeginInvoke_mEAC2B78E3E654314CBCA928BD7258629930C6729,
+	GetRightControllerTransformDelegate_EndInvoke_m3C9814263CB05AD4AF37D9E0735334EDB9CBCBC7,
+	NULL,
+	NULL,
+	NULL,
+	CustomIntegrationConfigBase_Awake_mE343DD448130865AD3706C93DFBB62E0D5F4CD78,
+	CustomIntegrationConfigBase_OnDestroy_mB07679E1AA9B42D79B1E3D30192010B56F0640CC,
+	CustomIntegrationConfigBase_GetCamera_m00168AB60C2B28A6286AF3D29FA7ED81F24E4EAB,
+	CustomIntegrationConfigBase_GetLeftControllerTransform_mE831FB4E8953AC59121633BEB6A2C86A1E968E92,
+	CustomIntegrationConfigBase_GetRightControllerTransform_m91C228CA4277A2B8DBEAE4131AD2568A9F033220,
+	CustomIntegrationConfigBase__ctor_mE96705B31E26A03C2FEDA28BCE42594BA3E59993,
+	DebugMember__ctor_m23524BF378E4EA831123889D02C9A659855D65EA,
+	DebugMember__cctor_mCDE94112D1AD0353A21B35FC7D2A1DD84FA62566,
+};
+static const int32_t s_InvokerIndices[34] = 
+{
+	10031,
+	10031,
+	10031,
+	10031,
+	10031,
+	10031,
+	10031,
+	10031,
+	10197,
+	10197,
+	10197,
+	3027,
+	7031,
+	2248,
+	5020,
+	3027,
+	7031,
+	2248,
+	5020,
+	3027,
+	7031,
+	2248,
+	5020,
+	0,
+	0,
+	0,
+	7119,
+	7119,
+	7031,
+	7031,
+	7031,
+	7119,
+	5632,
+	10224,
+};
+IL2CPP_EXTERN_C const Il2CppCodeGenModule g_Meta_XR_ImmersiveDebugger_Interface_CodeGenModule;
+const Il2CppCodeGenModule g_Meta_XR_ImmersiveDebugger_Interface_CodeGenModule = 
+{
+	"Meta.XR.ImmersiveDebugger.Interface.dll",
+	34,
+	s_methodPointers,
+	0,
+	NULL,
+	s_InvokerIndices,
+	0,
+	NULL,
+	0,
+	NULL,
+	0,
+	NULL,
+	NULL,
+	NULL, // module initializer,
+	NULL,
+	NULL,
+	NULL,
+};
