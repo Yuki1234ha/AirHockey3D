@@ -1,220 +1,174 @@
 // AIAgentController.cs
-// Unity 6およびInference Engineの最新サンプルコードの仕様に準拠したONNXモデル制御スクリプト。
-// AIマレットを制御します。
+// ML-Agentsフレームワークを利用して推論を実行する、パフォーマンスと実装を最適化した最終版。
+// ★ 推論時間の計測機能と、色付きのデバッグログ機能を追加 ★
+// ★ FixedUpdateで手動で意思決定をリクエストする方式に変更 ★
+// ★★ 観測データが十分に溜まるまで行動しないように修正 ★★
 
 using UnityEngine;
-using Unity.InferenceEngine; // サンプルコードに合わせ、名前空間をInferenceEngineに指定
-using System.Collections; 
+using Unity.MLAgents;
+using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Actuators;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text; // StringBuilderを使用するために追加
+using System.Diagnostics; // Stopwatchのために追加
+using Debug = UnityEngine.Debug; // 明示的にUnityEngine.Debugを使用
 
-public class AIAgentController : MonoBehaviour
+public class AIAgentController : Agent
 {
-    [Header("ONNXモデル設定")]
-    [Tooltip("Assets内にあるONNXモデルファイルを指定")]
-    public ModelAsset modelAsset;
-
     [Header("オブジェクト参照")]
-    [Tooltip("AIマレットのRigidbody")]
     public Rigidbody selfRigidbody;
-
-    [Tooltip("プレイヤーマレットのTransform")]
     public Transform playerMallet;
-
-    [Tooltip("パックのRigidbody")]
     public Rigidbody puckRigidbody;
+    public Transform leftWall;
+    public Transform rightWall;
 
     [Header("AI設定")]
-    [Tooltip("AIマレットの移動速度")]
-    public float moveSpeed = 2.5f; // ★★★ AIマレットの移動速度をInspectorから設定可能に ★★★
+    [Tooltip("このAIエージェントのID（0または1）")]
+    public int agentID = 0;
+    [Tooltip("モデルが出力するアクションの最大速度")]
+    public float maxSpeed = 20.0f;
+    [Tooltip("観測履歴を保存するフレーム数")]
+    public int observationHistorySize = 5;
 
-    [Tooltip("デバッグ用のログ出力を有効にする")]
-    public bool enableDebugLogs = true; // ★★★ InspectorからON/OFFできるログ出力フラグを追加 ★★★
+    [Header("デバッグ設定")]
+    [Tooltip("有効にすると、デバッグログと推論時間を出力します")]
+    public bool logEnabled = true;
 
-    [Tooltip("モデルへの入力として使用する過去のフレーム数")]
-    private const int ObservationBufferSize = 5;
-
-    [Tooltip("1フレームあたりの観測データの次元数")]
-    private const int DataDimension = 10;
-
-    // --- Inference Engine関連 ---
-    private Model runtimeModel;
-    private Worker engine;
-    private Tensor<float> inputTensor;
-
-    private IEnumerator inferenceSchedule;
-
-    // --- 観測データ関連 ---
+    // --- 内部変数 ---
+    private float dir; // 座標系の向き(1.0f or -1.0f)
     private readonly List<float[]> observationBuffer = new List<float[]>();
+    private Stopwatch inferenceTimer;
+    
+    // ★★ エピソード開始からのフレームを数えるカウンター ★★
+    private int framesCollected = 0;
 
-    void Start()
+    /// <summary>
+    /// エージェントが初期化されるときに一度だけ呼ばれる
+    /// </summary>
+    public override void Initialize()
     {
-        if (Mathf.Abs(Time.fixedDeltaTime - (1f / 60f)) > 0.001f)
-        {
-            Debug.LogWarning($"現在のFixed Timestep ({Time.fixedDeltaTime:F6}s) は60fpsと一致していません。Project Settings > Time > Fixed Timestep を {1f / 60f:F6} に設定してください。");
-        }
+        if (logEnabled) Debug.Log($"<color=cyan>[{gameObject.name}] Initializing Agent (ID: {agentID})...</color>");
+
+        inferenceTimer = new Stopwatch();
+
         if (selfRigidbody == null) selfRigidbody = GetComponent<Rigidbody>();
-        if (selfRigidbody == null)
-        {
-            Debug.LogError("AIマレットにRigidbodyがアタッチされていません。", this);
-            this.enabled = false;
-            return;
-        }
+        dir = (agentID == 0) ? 1.0f : -1.0f;
 
-        runtimeModel = ModelLoader.Load(modelAsset);
-        engine = new Worker(runtimeModel, BackendType.GPUCompute);
-        var inputShape = new TensorShape(1, ObservationBufferSize * DataDimension);
-        inputTensor = new Tensor<float>(inputShape);
-
-        Debug.Log("ONNXモデルをロードし、推論エンジンの準備が完了しました。");
-    }
-
-    void FixedUpdate()
-    {
-        // --- Step 1: デフォルトアクションとして停止 ---
-        selfRigidbody.linearVelocity = Vector3.zero;
-
-        // --- Step 2: 前のフレームの推論が完了したかチェック ---
-        if (inferenceSchedule != null)
-        {
-            // 推論を1ステップ進める。MoveNext()がfalseを返せば完了。
-            bool hasMoreWork = true;
-
-            if (!hasMoreWork)
-            {
-                // ★ 1フレームで完了した場合のみ、結果を取得して行動を適用 ★
-                string outputName = "deterministic_continuous_actions";
-                using var outputTensor = (engine.PeekOutput(outputName) as Tensor<float>).ReadbackAndClone();
-
-                float targetVelocityX = outputTensor[0];
-                float targetVelocityZ = outputTensor[1];
-
-                ApplyAction(targetVelocityX, targetVelocityZ);
-            }
-            else
-            {
-                // ★ 推論がまだ完了していない場合は、何もしない ★
-                if (enableDebugLogs)
-                {
-                    Debug.Log("<color=yellow>[Inference]</color> 推論がまだ完了していません。次のフレームで再試行します。");
-                }
-            }
-            inferenceSchedule = null; // 推論スケジュールをリセット
-            // else: まだ計算中。結果は棄却され、次のフレームで新しい推論に上書きされる。
-        }
-
-        // --- Step 3: 常に新しい観測データで、次のフレームのための推論を開始 ---
-        CollectObservations();
-        if (observationBuffer.Count >= ObservationBufferSize)
-        {
-            RequestDecision();
-        }
+        if (logEnabled) Debug.Log($"<color=green>[{gameObject.name}] Agent Initialized successfully.</color>");
     }
 
     /// <summary>
-    /// 各オブジェクトの座標と速度を取得し、モデルの入力形式に整形する。
+    /// 新しいエピソード（ゲームのラウンド）が始まるときに呼ばれる
     /// </summary>
-    void CollectObservations()
+    public override void OnEpisodeBegin()
     {
-        float[] currentObservation = new float[DataDimension];
+        if (logEnabled) Debug.Log($"<color=cyan>[{gameObject.name}] New episode started.</color>");
+        
+        // ★★ 内部状態をリセット ★★
+        selfRigidbody.linearVelocity = UnityEngine.Vector3.zero;
+        selfRigidbody.angularVelocity = UnityEngine.Vector3.zero;
+        observationBuffer.Clear(); // バッファをクリア
+        framesCollected = 0;       // フレームカウンターをリセット
+    }
 
-        // --- 観測データを取得 ---
-        Vector3 selfPos = selfRigidbody.position;
-        Vector3 selfVel = selfRigidbody.linearVelocity;
-        Vector3 playerPos = playerMallet.position;
-        Vector3 puckPos = puckRigidbody.position;
-        Vector3 puckVel = puckRigidbody.linearVelocity;
+    /// <summary>
+    /// 物理演算の更新タイミングで呼ばれるFixedUpdate
+    /// </summary>
+    private void FixedUpdate()
+    {
+        // 意思決定をリクエストし、観測と行動のサイクルを開始する
+        this.RequestDecision();
+    }
 
-        currentObservation[0] = selfPos.x;
-        currentObservation[1] = selfPos.z;
-        currentObservation[2] = selfVel.x;
-        currentObservation[3] = selfVel.z;
-        currentObservation[4] = playerPos.x; // プレイヤーとの相対位置
-        currentObservation[5] = playerPos.z; // プレイヤーとの相対位置
-        currentObservation[6] = puckPos.x; // パックとの相対位置
-        currentObservation[7] = puckPos.z; // パックとの相対位置
-        currentObservation[8] = puckVel.x; // パックの速度X
-        currentObservation[9] = puckVel.z;
 
-        // ★★★ ログ出力追加（観測データ） ★★★
-        if (enableDebugLogs)
+    /// <summary>
+    /// ML-Agentsが観測を要求するときに呼ばれる
+    /// </summary>
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        inferenceTimer.Restart();
+        // 観測バッファが満たされていない場合は、ゼロで埋める
+        while (observationBuffer.Count < observationHistorySize)
         {
-            var sb = new StringBuilder();
-            sb.Append("<color=cyan>[Observation]</color> ");
-            sb.Append($"SelfPos:({selfPos.x:F2}, {selfPos.z:F2}), ");
-            sb.Append($"PlayerPos:({playerPos.x:F2}, {playerPos.z:F2}), ");
-            sb.Append($"PuckPos:({puckPos.x:F2}, {puckPos.z:F2}), ");
-            sb.Append($"PuckVel:({puckVel.x:F2}, {puckVel.z:F2})");
-            Debug.Log(sb.ToString());
+            observationBuffer.Insert(0, new float[10]);
         }
 
-        // // --- データを正規化してバッファに追加 ---
-        // for (int i = 0; i < DataDimension; i++)
-        // {
-        //     currentObservation[i] /= 10.0f;
-        // }
+        // 最新の観測データを計算
+        float[] currentObservation = new float[10];
+        UnityEngine.Vector3 selfPos = selfRigidbody.position;
+        UnityEngine.Vector3 selfVel = selfRigidbody.linearVelocity;
+        UnityEngine.Vector3 playerPos = playerMallet.position;
+        UnityEngine.Vector3 puckPos = puckRigidbody.position;
+        UnityEngine.Vector3 puckVel = puckRigidbody.linearVelocity;
 
+        currentObservation[0] = selfPos.x * dir;
+        currentObservation[1] = selfPos.z * dir;
+        currentObservation[2] = selfVel.x * dir;
+        currentObservation[3] = selfVel.z * dir;
+        currentObservation[4] = playerPos.x * dir;
+        currentObservation[5] = playerPos.z * dir;
+        currentObservation[6] = puckPos.x * dir;
+        currentObservation[7] = puckPos.z * dir;
+        currentObservation[8] = puckVel.x * dir;
+        currentObservation[9] = puckVel.z * dir;
+
+        // バッファを更新
         observationBuffer.Add(currentObservation);
-        if (observationBuffer.Count > ObservationBufferSize)
+        while (observationBuffer.Count > observationHistorySize)
         {
-            observationBuffer.RemoveAt(0); // バッファサイズを維持
+            observationBuffer.RemoveAt(0);
+        }
+
+        // バッファ内の全データをセンサーに追加
+        foreach (var obs in observationBuffer)
+        {
+            sensor.AddObservation(obs);
         }
     }
 
     /// <summary>
-    /// ONNXモデルに現在の観測データを渡し、推論を実行して行動を決定・適用する。
+    /// ML-Agentsがモデルから行動を受け取ったときに呼ばれる
     /// </summary>
-    void RequestDecision()
+    public override void OnActionReceived(ActionBuffers actions)
     {
-        // ★★★ InvalidOperationExceptionを解決するための修正箇所 ★★★
-        // 推論を実行するたびに、新しい入力テンソルを生成します。
-        // これにより、GPUが使用中のメモリにCPUが書き込もうとする競合を防ぎます。
-        var inputShape = new TensorShape(1, ObservationBufferSize * DataDimension);
-        using var inputTensor = new Tensor<float>(inputShape); // 'using'で自動的にDisposeされ、メモリリークを防ぎます。
+        inferenceTimer.Stop();
+        framesCollected++; // フレームカウンターをインクリメント
 
-        // 観測データを新しいテンソルに書き込みます。
-        float[] flatObservations = observationBuffer.SelectMany(obs => obs).ToArray();
-        for (int i = 0; i < flatObservations.Length; i++)
+        // ★★ 観測データが十分に溜まるまで行動しない ★★
+        if (framesCollected < observationHistorySize)
         {
-            inputTensor[i] = flatObservations[i];
+            if (logEnabled) Debug.Log($"<color=grey>[{gameObject.name}] Waiting for observations... ({framesCollected}/{observationHistorySize})</color>");
+            // 念のため静止させておく
+            selfRigidbody.linearVelocity = UnityEngine.Vector3.zero;
+            return; // ここで処理を中断し、行動しない
         }
 
-        if (enableDebugLogs)
-        {
-            // Tensor<float>にToReadOnlyArray()は存在しないため、手動で値を取得
-            int inputTensorElementCount = inputTensor.shape.length;
-            var tensorValues = string.Join(", ", Enumerable.Range(0, Mathf.Min(10, inputTensorElementCount)).Select(i => inputTensor[i])); // 先頭10個だけ表示
-            Debug.Log($"<color=green>[Inference Input]</color> Input Tensor: {inputTensor.ToString()}, Values: [{tensorValues}]");
-        }
+        // --- ここから先は、データが十分に溜まった後でないと実行されない ---
+        if (logEnabled) Debug.Log($"<color=magenta>[{gameObject.name}] Action received.</color>");
 
-        inferenceSchedule = engine.ScheduleIterable(inputTensor);
-    }
-
-
-    /// <summary>
-    /// 推論結果（目標速度）をAIマレットのRigidbodyに適用する。
-    /// </summary>
-    void ApplyAction(float velocityX, float velocityZ)
-    {
-
-        float scaledVelocityX = velocityX * moveSpeed;
-        float scaledVelocityZ = velocityZ * moveSpeed;
+        float moveLeftGear = actions.ContinuousActions[0];
+        float moveRightGear = actions.ContinuousActions[1];
         
-        // ZとXの順番が逆になっていたのを修正
-        Vector3 targetVelocity = new Vector3(scaledVelocityX, 0f, scaledVelocityZ);
-        
-        if (enableDebugLogs)
-        {
-            Debug.Log($"<color=orange>[Action]</color> Applying Scaled Velocity: {targetVelocity.ToString("F3")}");
-        }
+        moveLeftGear = Mathf.Clamp(moveLeftGear, -1.0f, 1.0f) * maxSpeed;
+        moveRightGear = Mathf.Clamp(moveRightGear, -1.0f, 1.0f) * maxSpeed;
 
+        float moveX = (-moveRightGear - moveLeftGear) * Mathf.Sqrt(2) / 2;
+        float moveZ = (-moveRightGear + moveLeftGear) * Mathf.Sqrt(2) / 2;
+
+        UnityEngine.Vector3 targetVelocity = new UnityEngine.Vector3(moveX * dir, 0f, moveZ * dir);
         selfRigidbody.linearVelocity = targetVelocity;
+
+        if (logEnabled)
+        {
+            Debug.Log($"<color=magenta>[{gameObject.name}] Action executed. Target Velocity: {targetVelocity.ToString("F3")}</color>");
+            Debug.Log($"<color=yellow>[{gameObject.name}] Inference Time: {inferenceTimer.Elapsed.TotalMilliseconds:F2} ms</color>");
+        }
     }
 
-    void OnDestroy()
+    /// <summary>
+    /// プレイヤーが操作するためのテスト用メソッド
+    /// </summary>
+    public override void Heuristic(in ActionBuffers actionsOut)
     {
-        engine?.Dispose();
-        inputTensor?.Dispose();
+        // 必要であれば、キーボード入力で操作するロジックをここに記述
     }
 }
