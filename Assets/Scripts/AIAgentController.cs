@@ -32,6 +32,10 @@ public class AIAgentController : Agent
     [Header("デバッグ設定")]
     [Tooltip("有効にすると、デバッグログと推論時間を出力します")]
     public bool logEnabled = true;
+     // ★★★ ゲームルール設定を追加 ★★★
+    [Header("ゲームルール設定")]
+    [Tooltip("フィールドのセンターラインのZ座標")]
+    public float centerLineZ = 0.5f;
 
     // --- 内部変数 ---
     private float dir; // 座標系の向き(1.0f or -1.0f)
@@ -154,6 +158,16 @@ public class AIAgentController : Agent
         float moveX = (-moveRightGear - moveLeftGear) * Mathf.Sqrt(2) / 2;
         float moveZ = (-moveRightGear + moveLeftGear) * Mathf.Sqrt(2) / 2;
 
+        if (selfRigidbody.position.z * dir >= centerLineZ && moveZ > 0)
+        {
+            // 前進(Z方向)の動きをキャンセル
+            moveZ = 0;
+
+            if (logEnabled)
+            {
+                Debug.Log($"<color=red>[Boundary Limit]</color> AI (ID:{agentID}) tried to cross the center line. Z-velocity clamped.");
+            }
+        }
         UnityEngine.Vector3 targetVelocity = new UnityEngine.Vector3(moveX * dir, 0f, moveZ * dir);
         selfRigidbody.linearVelocity = targetVelocity;
 
