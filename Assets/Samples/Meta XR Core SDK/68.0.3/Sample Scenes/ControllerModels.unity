@@ -8082,7 +8082,7 @@ Rigidbody:
   m_GameObject: {fileID: 1629546507}
   serializedVersion: 4
   m_Mass: 1
-  m_Drag: 0
+  m_Drag: 0.2
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -8095,7 +8095,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 84
@@ -8161,7 +8161,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 116
@@ -8223,7 +8223,7 @@ MonoBehaviour:
   leftWall: {fileID: 2056785417}
   rightWall: {fileID: 845335954}
   agentID: 0
-  maxSpeed: 10
+  maxSpeed: 20
   observationHistorySize: 5
   logEnabled: 1
   centerLineZ: 0.5
