@@ -145,14 +145,14 @@ public class HitAssistController : MonoBehaviour
                 Debug.Log($"SphereCast hit {hits.Length} objects");
                 if (hits.Length > 0)
                 {
-                    var sortedHits = hits.OrderBy(h => h.distance).ToArray();
-                    foreach (var hit in sortedHits)
+                    foreach (var hit in hits)
                     {
+                        Debug.Log($"Hit: {hit.collider.name} at distance {hit.collider.tag}");
                         if (hit.collider.CompareTag("Puck"))
                         {
                             Debug.Log($"Assist hit: {hit.collider.name} at distance {hit.distance}");
                             TriggerAssist(hit.collider, hit.point);
-                            break; 
+                            break;
                         }
                     }
                 }
