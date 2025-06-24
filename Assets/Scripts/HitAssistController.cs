@@ -53,7 +53,7 @@ public class HitAssistController : MonoBehaviour
     private Vector3 grabberVelocity;
 
     // エフェクトを隠しておくための、カメラから遠い待機場所
-    private readonly Vector3 effectWaitPosition = new Vector3(0, -1000, 0);
+    private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
     // エフェクトを戻すコルーチンを管理するための変数
     private Coroutine returnEffectCoroutine;
 
@@ -142,7 +142,7 @@ public class HitAssistController : MonoBehaviour
             if (moveDistance > 0.001f && grabberVelocity.magnitude > minAssistVelocity)
             {
                 RaycastHit[] hits = Physics.SphereCastAll(previousGrabberPosition, assistSphereCollider.radius, movementDelta.normalized, moveDistance);
-
+                Debug.Log($"SphereCast hit {hits.Length} objects");
                 if (hits.Length > 0)
                 {
                     var sortedHits = hits.OrderBy(h => h.distance).ToArray();
@@ -150,6 +150,7 @@ public class HitAssistController : MonoBehaviour
                     {
                         if (hit.collider.CompareTag("Puck"))
                         {
+                            Debug.Log($"Assist hit: {hit.collider.name} at distance {hit.distance}");
                             TriggerAssist(hit.collider, hit.point);
                             break; 
                         }
