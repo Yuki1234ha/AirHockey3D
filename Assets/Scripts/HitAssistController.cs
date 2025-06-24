@@ -1,10 +1,14 @@
-// HitAssistController.cs (オブジェクトプール版)
-// エフェクトを動的に生成するのではなく、シーンに配置済みのオブジェクトを移動・再生する方式に変更。
-// これにより、Instantiate時の問題を完全に回避します。
+// HitAssistController.cs (Interaction SDK最終版)
+// Oculus Interaction SDK (Unity 6系) の正しいイベントモデルに対応。
+// WhenSelectingInteractorViewAdded/Removedイベントを利用してグラブ状態を検知します。
 
 using UnityEngine;
 using System.Collections;
 using System.Linq;
+// Oculus Interaction SDKに必要なusingディレクティブ
+using Oculus.Interaction;
+using Oculus.Interaction.HandGrab;
+using Oculus.Interaction.Input;
 
 [RequireComponent(typeof(Rigidbody))]
 public class HitAssistController : MonoBehaviour
@@ -26,8 +30,10 @@ public class HitAssistController : MonoBehaviour
     [Header("フィードバック設定")]
     [Tooltip("アシストヒット時に再生する効果音")]
     public AudioClip assistHitSound;
-    [Tooltip("【シーンに配置済みの】パーティクルエフェクトオブジェクト")]
-    public ParticleSystem assistHitEffect; // ★★★ Inspectorからシーン上のオブジェクトをアタッチ ★★★
+    [Tooltip("【シーンに配置済みの】ループ再生させるパーティクルエフェクト")]
+    public ParticleSystem assistHitEffect;
+    [Tooltip("エフェクトが見える時間（秒）")]
+    public float effectVisibleDuration = 1.0f;
     [Tooltip("効果音を再生するAudioSource（任意）。未設定の場合はこのオブジェクトのものを探します")]
     public AudioSource assistHitAudioSource;
 
@@ -35,39 +41,61 @@ public class HitAssistController : MonoBehaviour
     [Tooltip("アシスト後、物理マレットとパックの当たり判定を無視する時間")]
     public float ignoreCollisionDuration = 0.2f;
 
-    [Header("OVRGrabbableがアタッチされたオブジェクト")]
-    public OVRGrabbable grabbableObject;
+    [Header("Interaction SDK 設定")]
+    [Tooltip("このオブジェクトにアタッチされているHandGrabInteractableコンポーネント")]
+    public HandGrabInteractable interactableObject;
 
     // --- 内部変数 ---
     private Rigidbody selfRigidbody;
-    private OVRGrabbable grabbable;
-    private OVRGrabber grabbedBy = null;
+    private IInteractableView interactable; // IInteractableViewとして参照を保持
+    private HandGrabInteractor grabbingInteractor = null;
     private Vector3 previousGrabberPosition;
     private Vector3 grabberVelocity;
+
     // エフェクトを隠しておくための、カメラから遠い待機場所
-    private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
-    private float effectVisibleDuration = 1.0f;
+    private readonly Vector3 effectWaitPosition = new Vector3(0, -1000, 0);
     // エフェクトを戻すコルーチンを管理するための変数
     private Coroutine returnEffectCoroutine;
-    // 表す場所
-    public Vector3 EffectWaitPosition;
 
-    private int assistHitCount = 0; // アシストヒットの回数をカウントする変数
-    void Start()
+    // Awakeでコンポーネントの参照を取得
+    void Awake()
     {
         selfRigidbody = GetComponent<Rigidbody>();
-        grabbable = grabbableObject != null ? grabbableObject : GetComponent<OVRGrabbable>();
+        interactable = interactableObject != null ? interactableObject : GetComponent<HandGrabInteractable>();
 
-        if (grabbable == null)
+        if (interactable == null)
         {
-            Debug.LogError("OVRGrabbableコンポーネントが見つかりません！", this);
+            Debug.LogError("HandGrabInteractableコンポーネントが見つかりません！このGameObjectにアタッチしてください。", this);
             this.enabled = false;
-            return;
         }
+    }
+
+    // OnEnable/OnDisableでイベントの登録・解除を行うのが安全な作法
+    void OnEnable()
+    {
+        if (interactable != null)
+        {
+            // ★★★ 正しいイベントに登録 ★★★
+            interactable.WhenSelectingInteractorViewAdded += HandleInteractorViewAdded;
+            interactable.WhenSelectingInteractorViewRemoved += HandleInteractorViewRemoved;
+        }
+    }
+
+    void OnDisable()
+    {
+        if (interactable != null)
+        {
+            // ★★★ 登録したイベントを解除 ★★★
+            interactable.WhenSelectingInteractorViewAdded -= HandleInteractorViewAdded;
+            interactable.WhenSelectingInteractorViewRemoved -= HandleInteractorViewRemoved;
+        }
+    }
+    
+    void Start()
+    {
         // エフェクトの初期設定
         if (assistHitEffect != null)
         {
-            // 最初に待機場所へ移動させておく
             assistHitEffect.transform.position = effectWaitPosition;
         }
         else
@@ -75,20 +103,27 @@ public class HitAssistController : MonoBehaviour
             Debug.LogWarning("assistHitEffect がInspectorで設定されていません。", this);
         }
     }
-
-    void Update()
+    // オブジェクトが掴まれた時に呼ばれる
+    private void HandleInteractorViewAdded(IInteractorView interactorView)
     {
-        if (grabbable.isGrabbed && grabbedBy == null)
+        // イベントを発生させたInteractorをHandGrabInteractorとして取得
+        grabbingInteractor = interactorView as HandGrabInteractor;
+        if (grabbingInteractor != null)
         {
-            grabbedBy = grabbable.grabbedBy;
-            if (grabbedBy != null)
-            {
-                previousGrabberPosition = grabbedBy.transform.position;
-            }
+            // 速度計算のために初期位置を記録
+            previousGrabberPosition = grabbingInteractor.transform.position;
+            Debug.Log($"<color=green>Grabbed by: {grabbingInteractor.name}</color>");
         }
-        else if (!grabbable.isGrabbed && grabbedBy != null)
+    }
+    
+    // オブジェクトが離された時に呼ばれる
+    private void HandleInteractorViewRemoved(IInteractorView interactorView)
+    {
+        // 離したInteractorが、現在掴んでいるInteractorと同じか確認
+        if ((object)interactorView == grabbingInteractor)
         {
-            grabbedBy = null;
+            Debug.Log($"<color=red>Released by: {grabbingInteractor.name}</color>");
+            grabbingInteractor = null;
             grabberVelocity = Vector3.zero;
         }
     }
@@ -96,20 +131,10 @@ public class HitAssistController : MonoBehaviour
     [System.Obsolete]
     void FixedUpdate()
     {
-        // assistHitCount++;
-        // // アシストヒットの回数をカウント
-        // if (assistHitCount % 400 == 0)
-        // {
-        //     assistHitEffect.transform.position = EffectWaitPosition;
-        //     Debug.Log($"<color=lime>Effect moved to </color>");
-
-        //     // 2. 一定時間後に待機場所へ戻す処理を開始する
-        //     returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition());
-        // }
-
-        if (grabbedBy != null)
+        // オブジェクトが掴まれている間だけ、速度を計算してアシスト判定を行う
+        if (grabbingInteractor != null)
         {
-            Vector3 currentPosition = grabbedBy.transform.position;
+            Vector3 currentPosition = grabbingInteractor.transform.position;
             Vector3 movementDelta = currentPosition - previousGrabberPosition;
             grabberVelocity = movementDelta / Time.fixedDeltaTime;
             float moveDistance = movementDelta.magnitude;
@@ -126,7 +151,7 @@ public class HitAssistController : MonoBehaviour
                         if (hit.collider.CompareTag("Puck"))
                         {
                             TriggerAssist(hit.collider, hit.point);
-                            break;
+                            break; 
                         }
                     }
                 }
@@ -144,36 +169,48 @@ public class HitAssistController : MonoBehaviour
         Vector3 idealNormal = (transform.position - puckCollider.transform.position).normalized;
         Vector3 reflection = Vector3.Reflect(grabberVelocity, idealNormal);
         puckRigidbody.velocity = reflection.normalized * grabberVelocity.magnitude * assistImpactMultiplier;
-
+        
         ProvideHapticFeedback();
         PlayAssistSound();
         PlayAssistEffect(hitPoint);
         StartCoroutine(IgnoreCollision(puckCollider));
     }
-
+    
     void PlayAssistEffect(Vector3 position)
     {
         if (assistHitEffect == null) return;
         
-        // もし既に戻す処理が実行中なら、一旦停止する（連続ヒット対策）
         if (returnEffectCoroutine != null)
         {
             StopCoroutine(returnEffectCoroutine);
         }
 
-        // 1. ループ再生中のエフェクトをヒット地点に移動させる
         assistHitEffect.transform.position = position;
-        Debug.Log($"<color=lime>Effect moved to {position}</color>");
-
-        // 2. 一定時間後に待機場所へ戻す処理を開始する
+        
         returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition());
     }
-
+    
+    private IEnumerator ReturnEffectToWaitPosition()
+    {
+        yield return new WaitForSeconds(effectVisibleDuration);
+        assistHitEffect.transform.position = effectWaitPosition;
+    }
+    
     void ProvideHapticFeedback()
     {
-        if (grabbedBy != null) OVRInput.SetControllerVibration(0.8f, 0.8f, OVRInput.Controller.RTouch);
+        if (grabbingInteractor != null)
+        {
+            IHand hand = grabbingInteractor.Hand;
+            if (hand != null)
+            {
+                OVRInput.Controller controllerToVibrate = (hand.Handedness == Handedness.Left) 
+                    ? OVRInput.Controller.LTouch 
+                    : OVRInput.Controller.RTouch;
+                OVRInput.SetControllerVibration(0.8f, 0.8f, controllerToVibrate);
+            }
+        }
     }
-
+    
     void PlayAssistSound()
     {
         var audioSource = assistHitAudioSource != null ? assistHitAudioSource : GetComponent<AudioSource>();
@@ -186,16 +223,5 @@ public class HitAssistController : MonoBehaviour
         Physics.IgnoreCollision(physicalMalletCollider, puckCollider, true);
         yield return new WaitForSeconds(ignoreCollisionDuration);
         if (physicalMalletCollider != null && puckCollider != null) Physics.IgnoreCollision(physicalMalletCollider, puckCollider, false);
-    }
-    
-    // エフェクトを待機場所に戻すためのコルーチン
-    private IEnumerator ReturnEffectToWaitPosition()
-    {
-        // 設定された時間だけ待つ
-        yield return new WaitForSeconds(effectVisibleDuration);
-
-        // 待機場所へ戻す
-        assistHitEffect.transform.position = effectWaitPosition;
-        Debug.Log("<color=orange>Effect returned to wait position.</color>");
     }
 }
