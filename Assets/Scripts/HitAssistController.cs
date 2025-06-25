@@ -138,6 +138,7 @@ public class HitAssistController : MonoBehaviour
             // Time.deltaTimeで割ることで、フレームレートに依存しない秒速を計算
             grabberVelocity = movementDelta / Time.deltaTime;
             previousGrabberPosition = currentPosition;
+            Debug.Log($"<color=green>Grabber Velocity: {grabberVelocity.magnitude}</color>");
         }
     }
 
@@ -175,13 +176,14 @@ public class HitAssistController : MonoBehaviour
     // }
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag}</color>");
         // 掴まれていない、または速度が足りない場合は何もしない
         if (grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
         {
             Debug.Log($"<color=red>OnTriggerEnter: {other.name} with tag {other.tag} - Ignored due to low velocity or not grabbed</color>");
             return;
         }
-        Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag}</color>");
+        
 
         // 衝突した相手が "Puck" タグを持っている場合
         if (other.CompareTag("Puck"))
