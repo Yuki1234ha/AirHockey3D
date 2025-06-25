@@ -128,36 +128,65 @@ public class HitAssistController : MonoBehaviour
         }
     }
 
-    [System.Obsolete]
-    void FixedUpdate()
+    void Update()
     {
-        // オブジェクトが掴まれている間だけ、速度を計算してアシスト判定を行う
+        // オブジェクトが掴まれている間だけ、速度を計算する
         if (grabbingInteractor != null)
         {
             Vector3 currentPosition = grabbingInteractor.transform.position;
             Vector3 movementDelta = currentPosition - previousGrabberPosition;
-            grabberVelocity = movementDelta / Time.fixedDeltaTime;
-            float moveDistance = movementDelta.magnitude;
-
-            if (moveDistance > 0.001f && grabberVelocity.magnitude > minAssistVelocity)
-            {
-                RaycastHit[] hits = Physics.SphereCastAll(previousGrabberPosition, assistSphereCollider.radius, movementDelta.normalized, moveDistance);
-                Debug.Log($"SphereCast hit {hits.Length} objects");
-                if (hits.Length > 0)
-                {
-                    foreach (var hit in hits)
-                    {
-                        Debug.Log($"Hit: {hit.collider.name} at distance {hit.collider.tag}");
-                        if (hit.collider.CompareTag("Puck"))
-                        {
-                            Debug.Log($"Assist hit: {hit.collider.name} at distance {hit.distance}");
-                            TriggerAssist(hit.collider, hit.point);
-                            break;
-                        }
-                    }
-                }
-            }
+            // Time.deltaTimeで割ることで、フレームレートに依存しない秒速を計算
+            grabberVelocity = movementDelta / Time.deltaTime;
             previousGrabberPosition = currentPosition;
+        }
+    }
+
+    [System.Obsolete]
+    // void FixedUpdate()
+    // {
+    //     // オブジェクトが掴まれている間だけ、速度を計算してアシスト判定を行う
+    //     if (grabbingInteractor != null)
+    //     {
+    //         Vector3 currentPosition = grabbingInteractor.transform.position;
+    //         Vector3 movementDelta = currentPosition - previousGrabberPosition;
+    //         grabberVelocity = movementDelta / Time.fixedDeltaTime;
+    //         float moveDistance = movementDelta.magnitude;
+
+    //         if (moveDistance > 0.001f && grabberVelocity.magnitude > minAssistVelocity)
+    //         {
+    //             RaycastHit[] hits = Physics.SphereCastAll(previousGrabberPosition, assistSphereCollider.radius, movementDelta.normalized, moveDistance);
+    //             Debug.Log($"SphereCast hit {hits.Length} objects");
+    //             if (hits.Length > 0)
+    //             {
+    //                 foreach (var hit in hits)
+    //                 {
+    //                     Debug.Log($"Hit: {hit.collider.name} at distance {hit.collider.tag}");
+    //                     if (hit.collider.CompareTag("Puck"))
+    //                     {
+    //                         Debug.Log($"Assist hit: {hit.collider.name} at distance {hit.distance}");
+    //                         TriggerAssist(hit.collider, hit.point);
+    //                         break;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         previousGrabberPosition = currentPosition;
+    //     }
+    // }
+    void OnTriggerEnter(Collider other)
+    {
+        // 掴まれていない、または速度が足りない場合は何もしない
+        if (grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
+        {
+            return;
+        }
+
+        // 衝突した相手が "Puck" タグを持っている場合
+        if (other.CompareTag("Puck"))
+        {
+            // ヒットポイントは、接触したパックの中心位置とする
+            Vector3 hitPoint = other.transform.position;
+            TriggerAssist(other, hitPoint);
         }
     }
 
