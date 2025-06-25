@@ -213,10 +213,31 @@ public class HitAssistController : MonoBehaviour
         Rigidbody puckRigidbody = puckCollider.GetComponent<Rigidbody>();
         if (puckRigidbody == null) return;
 
-        Vector3 idealNormal = (transform.position - puckCollider.transform.position).normalized;
-        Vector3 reflection = Vector3.Reflect(grabberVelocity, idealNormal);
-        puckRigidbody.velocity = reflection.normalized * grabberVelocity.magnitude * assistImpactMultiplier;
-        Debug.Log($"reflection: {reflection} with velocity {puckRigidbody.velocity}");
+        // --- XZ平面上での計算 ---
+        
+        // 1. マレットとパックのベクトルをXZ平面に投影（Y軸を0にする）
+        Vector3 malletPosXZ = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 puckPosXZ = new Vector3(puckCollider.transform.position.x, 0, puckCollider.transform.position.z);
+
+        // 2. XZ平面上での理想的な法線ベクトルを計算
+        Vector3 idealNormalXZ = (malletPosXZ - puckPosXZ).normalized;
+        
+        // 3. コントローラーの速度もXZ平面に投影
+        Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
+
+        // 4. XZ平面上で反射ベクトルを計算
+        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ);
+
+        // 5. XZ平面の速度と倍率を使って、最終的な速度を計算
+        //    Y方向の速度は0のままなので、パックが上に飛び上がるのを防ぎます
+        float speedXZ = grabberVelocityXZ.magnitude;
+        Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
+
+        // 6. パックのRigidbodyに速度を適用
+        puckRigidbody.velocity = finalVelocity;
+        Debug.Log($"Assist applied: {puckCollider.name} with velocity {finalVelocity}");
+        
+        // --- フィードバック ---
         ProvideHapticFeedback();
         PlayAssistSound();
         PlayAssistEffect(hitPoint);
