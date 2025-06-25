@@ -202,6 +202,7 @@ public class HitAssistController : MonoBehaviour
             Debug.Log($"Assist hit: {other.name} at position {other.transform.position}");
             // ヒットポイントは、接触したパックの中心位置とする
             Vector3 hitPoint = other.transform.position;
+            Debug.Log($"Hit point: {hitPoint} grabberVelocity: {grabberVelocity}");
             TriggerAssist(other, hitPoint);
         }
     }
@@ -215,7 +216,7 @@ public class HitAssistController : MonoBehaviour
         Vector3 idealNormal = (transform.position - puckCollider.transform.position).normalized;
         Vector3 reflection = Vector3.Reflect(grabberVelocity, idealNormal);
         puckRigidbody.velocity = reflection.normalized * grabberVelocity.magnitude * assistImpactMultiplier;
-
+        Debug.Log($"reflection: {reflection} with velocity {puckRigidbody.velocity}");
         ProvideHapticFeedback();
         PlayAssistSound();
         PlayAssistEffect(hitPoint);
