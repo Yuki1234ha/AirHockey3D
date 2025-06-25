@@ -128,7 +128,7 @@ public class HitAssistController : MonoBehaviour
         }
     }
 
-    void Update()
+    void FixedUpdate()
     {
         // オブジェクトが掴まれている間だけ、速度を計算する
         if (grabbingInteractor != null)
@@ -178,6 +178,7 @@ public class HitAssistController : MonoBehaviour
         // 掴まれていない、または速度が足りない場合は何もしない
         if (grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
         {
+            Debug.Log($"<color=red>OnTriggerEnter: {other.name} with tag {other.tag} - Ignored due to low velocity or not grabbed</color>");
             return;
         }
         Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag}</color>");
