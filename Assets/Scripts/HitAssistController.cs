@@ -180,10 +180,13 @@ public class HitAssistController : MonoBehaviour
         {
             return;
         }
+        Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag}</color>");
 
         // 衝突した相手が "Puck" タグを持っている場合
         if (other.CompareTag("Puck"))
         {
+            // デバッグ用ログ
+            Debug.Log($"Assist hit: {other.name} at position {other.transform.position}");
             // ヒットポイントは、接触したパックの中心位置とする
             Vector3 hitPoint = other.transform.position;
             TriggerAssist(other, hitPoint);
