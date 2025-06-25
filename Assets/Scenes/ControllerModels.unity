@@ -313,7 +313,7 @@ GameObject:
   - component: {fileID: 53173878}
   - component: {fileID: 53173890}
   - component: {fileID: 53173891}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: paddle1 (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3949,7 +3949,7 @@ GameObject:
   - component: {fileID: 667281155}
   - component: {fileID: 667281157}
   - component: {fileID: 667281156}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: ISDK_HandGrabInteraction
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4047,7 +4047,7 @@ GameObject:
   - component: {fileID: 673164367}
   - component: {fileID: 673164366}
   - component: {fileID: 673164365}
-  m_Layer: 3
+  m_Layer: 6
   m_Name: plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4063,11 +4063,11 @@ Transform:
   m_GameObject: {fileID: 673164363}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 11.440001, z: 0}
-  m_LocalScale: {x: 13.200001, y: 0.099999994, z: 25.5}
+  m_LocalPosition: {x: 0, y: 5.870632, z: 0}
+  m_LocalScale: {x: 6.83496, y: 0.051779993, z: 13.203899}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 45907384}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &673164365
 BoxCollider:
@@ -7788,7 +7788,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -5852685805039820270, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -1700297128476962758, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_LocalScale.z
@@ -7892,7 +7892,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7669339893890042577, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_Layer
-      value: 3
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 7669339893890042577, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_TagString
@@ -7968,9 +7968,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       insertIndex: 14
       addedObject: {fileID: 53173877}
-    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 673164364}
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2056785417}
@@ -8321,7 +8318,7 @@ GameObject:
   - component: {fileID: 1639101360}
   - component: {fileID: 1639101362}
   - component: {fileID: 1639101363}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: PlayerArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8356,15 +8353,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minAssistVelocity: 1
-  assistImpactMultiplier: 30
+  assistImpactMultiplier: 15
   assistSphereCollider: {fileID: 1639101363}
   physicalMalletCollider: {fileID: 1577600000}
   assistHitSound: {fileID: 8300000, guid: 653f36802be5242d6b2d4c41ac4898d1, type: 3}
   assistHitEffect: {fileID: 1920227693733659315}
+  effectVisibleDuration: 1
   assistHitAudioSource: {fileID: 1639101362}
-  ignoreCollisionDuration: 0.2
-  grabbableObject: {fileID: 1577599998}
-  EffectWaitPosition: {x: 0.2, y: 6, z: 2}
+  ignoreCollisionDuration: 0.5
+  interactableObject: {fileID: 667281157}
+  target: {fileID: 1502185541}
+  vibrationDuration: 0.5
 --- !u!54 &1639101361
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -48127,7 +48126,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -4.54, y: 12.2, z: -14.7}
-  m_LocalScale: {x: 2.67, y: 2.67, z: 2.67}
+  m_LocalScale: {x: 0.81, y: 0.81, z: 0.81}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6539865397144239497}
@@ -49210,5 +49209,6 @@ SceneRoots:
   - {fileID: 1629546506}
   - {fileID: 2145602736}
   - {fileID: 1766949272}
+  - {fileID: 673164364}
   - {fileID: 1830106153}
   - {fileID: 5973004274949614671}

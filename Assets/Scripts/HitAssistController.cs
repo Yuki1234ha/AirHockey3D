@@ -45,6 +45,11 @@ public class HitAssistController : MonoBehaviour
     [Tooltip("このオブジェクトにアタッチされているHandGrabInteractableコンポーネント")]
     public HandGrabInteractable interactableObject;
 
+    [Tooltip("追従する対象のTransformを設定します")]
+    public Transform target;
+    [Tooltip("振動の継続時間（秒）")]
+    public float vibrationDuration = 0.1f;
+
     // --- 内部変数 ---
     private Rigidbody selfRigidbody;
     private IInteractableView interactable; // IInteractableViewとして参照を保持
@@ -90,7 +95,7 @@ public class HitAssistController : MonoBehaviour
             interactable.WhenSelectingInteractorViewRemoved -= HandleInteractorViewRemoved;
         }
     }
-    
+
     void Start()
     {
         // エフェクトの初期設定
@@ -115,7 +120,7 @@ public class HitAssistController : MonoBehaviour
             Debug.Log($"<color=green>Grabbed by: {grabbingInteractor.name}</color>");
         }
     }
-    
+
     // オブジェクトが離された時に呼ばれる
     private void HandleInteractorViewRemoved(IInteractorView interactorView)
     {
@@ -128,17 +133,22 @@ public class HitAssistController : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        // オブジェクトが掴まれている間だけ、速度を計算する
+        // オブジェクトが掴まれている間だけ、コントローラーの物理的な速度を取得する
         if (grabbingInteractor != null)
         {
-            Vector3 currentPosition = grabbingInteractor.transform.position;
-            Vector3 movementDelta = currentPosition - previousGrabberPosition;
-            // Time.deltaTimeで割ることで、フレームレートに依存しない秒速を計算
-            grabberVelocity = movementDelta / Time.deltaTime;
-            previousGrabberPosition = currentPosition;
-            Debug.Log($"<color=green>Grabber Velocity: {grabberVelocity.magnitude}</color>");
+            IHand hand = grabbingInteractor.Hand;
+            if (hand != null)
+            {
+                // 掴んでいる手から左右のコントローラーを特定
+                OVRInput.Controller controller = (hand.Handedness == Handedness.Left) 
+                    ? OVRInput.Controller.LTouch 
+                    : OVRInput.Controller.RTouch;
+                
+                // 追跡空間におけるコントローラーのローカル速度を取得（これが物理的なスイング速度）
+                grabberVelocity = OVRInput.GetLocalControllerVelocity(controller);
+            }
         }
     }
 
@@ -183,7 +193,7 @@ public class HitAssistController : MonoBehaviour
             Debug.Log($"<color=red>OnTriggerEnter: {other.name} with tag {other.tag} - Ignored due to low velocity or not grabbed</color>");
             return;
         }
-        
+
 
         // 衝突した相手が "Puck" タグを持っている場合
         if (other.CompareTag("Puck"))
@@ -205,33 +215,33 @@ public class HitAssistController : MonoBehaviour
         Vector3 idealNormal = (transform.position - puckCollider.transform.position).normalized;
         Vector3 reflection = Vector3.Reflect(grabberVelocity, idealNormal);
         puckRigidbody.velocity = reflection.normalized * grabberVelocity.magnitude * assistImpactMultiplier;
-        
+
         ProvideHapticFeedback();
         PlayAssistSound();
         PlayAssistEffect(hitPoint);
         StartCoroutine(IgnoreCollision(puckCollider));
     }
-    
+
     void PlayAssistEffect(Vector3 position)
     {
         if (assistHitEffect == null) return;
-        
+
         if (returnEffectCoroutine != null)
         {
             StopCoroutine(returnEffectCoroutine);
         }
 
         assistHitEffect.transform.position = position;
-        
+
         returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition());
     }
-    
+
     private IEnumerator ReturnEffectToWaitPosition()
     {
         yield return new WaitForSeconds(effectVisibleDuration);
         assistHitEffect.transform.position = effectWaitPosition;
     }
-    
+
     void ProvideHapticFeedback()
     {
         if (grabbingInteractor != null)
@@ -242,11 +252,23 @@ public class HitAssistController : MonoBehaviour
                 OVRInput.Controller controllerToVibrate = (hand.Handedness == Handedness.Left) 
                     ? OVRInput.Controller.LTouch 
                     : OVRInput.Controller.RTouch;
-                OVRInput.SetControllerVibration(0.8f, 0.8f, controllerToVibrate);
+                StartCoroutine(VibrateForDuration(controllerToVibrate));
             }
         }
     }
-    
+
+    private IEnumerator VibrateForDuration(OVRInput.Controller controller)
+    {
+        // 振動を開始
+        OVRInput.SetControllerVibration(0.8f, 0.8f, controller);
+
+        // 指定した時間待機
+        yield return new WaitForSeconds(vibrationDuration);
+
+        // 振動を停止
+        OVRInput.SetControllerVibration(0, 0, controller);
+    }
+
     void PlayAssistSound()
     {
         var audioSource = assistHitAudioSource != null ? assistHitAudioSource : GetComponent<AudioSource>();
@@ -255,9 +277,50 @@ public class HitAssistController : MonoBehaviour
 
     private IEnumerator IgnoreCollision(Collider puckCollider)
     {
-        if (physicalMalletCollider == null || puckCollider == null) yield break;
-        Physics.IgnoreCollision(physicalMalletCollider, puckCollider, true);
+        // パックのコライダーが存在しない場合は処理を中断
+        if (puckCollider == null) yield break;
+
+        // このオブジェクト（paddle1）とその子に含まれる全てのコライダーを取得
+        Collider[] allPaddleColliders = GetComponentsInChildren<Collider>();
+
+        // 全てのコライダーとパックの衝突を一時的に無効化
+        foreach(Collider paddleCollider in allPaddleColliders)
+        {
+            if (paddleCollider != null) // コライダーが破棄されていないか確認
+            {
+                Physics.IgnoreCollision(paddleCollider, puckCollider, true);
+            }
+        }
+
+        // 指定した時間だけ待機
         yield return new WaitForSeconds(ignoreCollisionDuration);
-        if (physicalMalletCollider != null && puckCollider != null) Physics.IgnoreCollision(physicalMalletCollider, puckCollider, false);
+
+        // オブジェクトが破棄されていないか確認してから、衝突を再度有効化
+        if(puckCollider != null)
+        {
+            foreach(Collider paddleCollider in allPaddleColliders)
+            {
+                // paddleColliderも破棄されていないか確認
+                if (paddleCollider != null)
+                {
+                    Physics.IgnoreCollision(paddleCollider, puckCollider, false);
+                }
+            }
+        }
+    }
+
+    void LateUpdate()
+    {
+        // 追従対象が設定されていなければ、何もしない
+        if (target == null)
+        {
+            return;
+        }
+
+        // 1. 対象の回転を基準に、自身の回転を設定する
+        transform.rotation = target.rotation;
+
+        // 2. 対象の位置と回転を基準に、自身の位置を設定する
+        transform.position = target.position;
     }
 }
