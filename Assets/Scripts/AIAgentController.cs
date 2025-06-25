@@ -52,7 +52,7 @@ public class AIAgentController : Agent
     {
         if (logEnabled) Debug.Log($"<color=cyan>[{gameObject.name}] Initializing Agent (ID: {agentID})...</color>");
 
-        inferenceTimer = new Stopwatch();
+        //inferenceTimer = new Stopwatch();
 
         if (selfRigidbody == null) selfRigidbody = GetComponent<Rigidbody>();
         dir = (agentID == 0) ? 1.0f : -1.0f;
@@ -75,106 +75,114 @@ public class AIAgentController : Agent
     }
 
     /// <summary>
-    /// 物理演算の更新タイミングで呼ばれるFixedUpdate
+    /// ML-Agentsが観測を要求するときに呼ばれる
     /// </summary>
+    [System.Obsolete]
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        // 1. 自分の位置 (XZ平面) (2 float)
+        sensor.AddObservation(transform.localPosition.x * dir);
+        sensor.AddObservation(transform.localPosition.z * dir); // Y -> Z
+
+        // 2. 自分の速度 (XZ平面) (2 float)
+        sensor.AddObservation(selfRigidbody.velocity.x * dir);
+        sensor.AddObservation(selfRigidbody.velocity.z * dir); // Y -> Z
+
+        // 3. 敵の位置 (XZ平面) (2 float)
+        sensor.AddObservation(playerMallet.transform.localPosition.x * dir);
+        sensor.AddObservation(playerMallet.transform.localPosition.z * dir); // Y -> Z
+
+        // 4. パックの位置 (XZ平面) (2 float)
+        sensor.AddObservation(puckRigidbody.transform.localPosition.x * dir);
+        sensor.AddObservation(puckRigidbody.transform.localPosition.z * dir); // Y -> Z
+
+        // 5. パックの速度 (XZ平面) (2 float)
+        Vector3 puck_velocity = puckRigidbody.velocity * dir;
+        sensor.AddObservation(puck_velocity.x);
+        sensor.AddObservation(puck_velocity.z); // Y -> Z
+        // inferenceTimer.Restart();
+        // // 観測バッファが満たされていない場合は、ゼロで埋める
+        // while (observationBuffer.Count < observationHistorySize)
+        // {
+        //     observationBuffer.Insert(0, new float[10]);
+        // }
+
+        // // 最新の観測データを計算
+        // float[] currentObservation = new float[10];
+        // UnityEngine.Vector3 selfPos = selfRigidbody.position;
+        // UnityEngine.Vector3 selfVel = selfRigidbody.linearVelocity;
+        // UnityEngine.Vector3 playerPos = playerMallet.position;
+        // UnityEngine.Vector3 puckPos = puckRigidbody.position;
+        // UnityEngine.Vector3 puckVel = puckRigidbody.linearVelocity;
+
+        // currentObservation[0] = selfPos.x * dir;
+        // currentObservation[1] = selfPos.z * dir;
+        // currentObservation[2] = selfVel.x * dir;
+        // currentObservation[3] = selfVel.z * dir;
+        // currentObservation[4] = playerPos.x * dir;
+        // currentObservation[5] = playerPos.z * dir;
+        // currentObservation[6] = puckPos.x * dir;
+        // currentObservation[7] = puckPos.z * dir;
+        // currentObservation[8] = puckVel.x * dir;
+        // currentObservation[9] = puckVel.z * dir;
+
+        // // バッファを更新
+        // observationBuffer.Add(currentObservation);
+        // while (observationBuffer.Count > observationHistorySize)
+        // {
+        //     observationBuffer.RemoveAt(0);
+        // }
+
+        // // バッファ内の全データをセンサーに追加
+        // foreach (var obs in observationBuffer)
+        // {
+        //     sensor.AddObservation(obs);
+        // }
+    }
+
     private void FixedUpdate()
     {
         // 意思決定をリクエストし、観測と行動のサイクルを開始する
         this.RequestDecision();
     }
 
-
-    /// <summary>
-    /// ML-Agentsが観測を要求するときに呼ばれる
-    /// </summary>
-    public override void CollectObservations(VectorSensor sensor)
-    {
-        inferenceTimer.Restart();
-        // 観測バッファが満たされていない場合は、ゼロで埋める
-        while (observationBuffer.Count < observationHistorySize)
-        {
-            observationBuffer.Insert(0, new float[10]);
-        }
-
-        // 最新の観測データを計算
-        float[] currentObservation = new float[10];
-        UnityEngine.Vector3 selfPos = selfRigidbody.position;
-        UnityEngine.Vector3 selfVel = selfRigidbody.linearVelocity;
-        UnityEngine.Vector3 playerPos = playerMallet.position;
-        UnityEngine.Vector3 puckPos = puckRigidbody.position;
-        UnityEngine.Vector3 puckVel = puckRigidbody.linearVelocity;
-
-        currentObservation[0] = selfPos.x * dir;
-        currentObservation[1] = selfPos.z * dir;
-        currentObservation[2] = selfVel.x * dir;
-        currentObservation[3] = selfVel.z * dir;
-        currentObservation[4] = playerPos.x * dir;
-        currentObservation[5] = playerPos.z * dir;
-        currentObservation[6] = puckPos.x * dir;
-        currentObservation[7] = puckPos.z * dir;
-        currentObservation[8] = puckVel.x * dir;
-        currentObservation[9] = puckVel.z * dir;
-
-        // バッファを更新
-        observationBuffer.Add(currentObservation);
-        while (observationBuffer.Count > observationHistorySize)
-        {
-            observationBuffer.RemoveAt(0);
-        }
-
-        // バッファ内の全データをセンサーに追加
-        foreach (var obs in observationBuffer)
-        {
-            sensor.AddObservation(obs);
-        }
-    }
-
     /// <summary>
     /// ML-Agentsがモデルから行動を受け取ったときに呼ばれる
     /// </summary>
+    [System.Obsolete]
     public override void OnActionReceived(ActionBuffers actions)
     {
-        inferenceTimer.Stop();
-        framesCollected++; // フレームカウンターをインクリメント
+        // inferenceTimer.Stop();
+        // framesCollected++; // フレームカウンターをインクリメント
 
-        // ★★ 観測データが十分に溜まるまで行動しない ★★
-        if (framesCollected < observationHistorySize)
+        // // ★★ 観測データが十分に溜まるまで行動しない ★★
+        // if (framesCollected < observationHistorySize)
+        // {
+        //     if (logEnabled) Debug.Log($"<color=grey>[{gameObject.name}] Waiting for observations... ({framesCollected}/{observationHistorySize})</color>");
+        //     // 念のため静止させておく
+        //     selfRigidbody.linearVelocity = UnityEngine.Vector3.zero;
+        //     return; // ここで処理を中断し、行動しない
+        // }
+
+        // // --- ここから先は、データが十分に溜まった後でないと実行されない ---
+        // if (logEnabled) Debug.Log($"<color=magenta>[{gameObject.name}] Action received.</color>");
+
+        float moveleftgear = Mathf.Clamp(actions.ContinuousActions[0], -1.0f, 1.0f) * 1.6f;
+        float moverightgear = Mathf.Clamp(actions.ContinuousActions[1], -1.0f, 1.0f) * 1.6f;
+
+        // 速度に変換 (YをZにマッピング)
+        float current_velocity_x_byNN = (-moverightgear - moveleftgear) * Mathf.Sqrt(2) / 2;
+        float current_velocity_z_byNN = (-moverightgear + moveleftgear) * Mathf.Sqrt(2) / 2; // Y -> Z
+
+        // Rigidbodyに力を加える (3D用に変更)
+        selfRigidbody.velocity += new Vector3(dir * current_velocity_x_byNN, 0f, dir * current_velocity_z_byNN);
+
+        // プレイヤーの行動範囲を制限するロジック (Z軸で判定)
+        float threthold_z = 1.0f; // 閾値の軸をZに変更
+        if (gameObject.transform.localPosition.z * dir >= threthold_z && selfRigidbody.velocity.z * dir >= 0)
         {
-            if (logEnabled) Debug.Log($"<color=grey>[{gameObject.name}] Waiting for observations... ({framesCollected}/{observationHistorySize})</color>");
-            // 念のため静止させておく
-            selfRigidbody.linearVelocity = UnityEngine.Vector3.zero;
-            return; // ここで処理を中断し、行動しない
-        }
-
-        // --- ここから先は、データが十分に溜まった後でないと実行されない ---
-        if (logEnabled) Debug.Log($"<color=magenta>[{gameObject.name}] Action received.</color>");
-
-        float moveLeftGear = actions.ContinuousActions[0];
-        float moveRightGear = actions.ContinuousActions[1];
-        
-        moveLeftGear = Mathf.Clamp(moveLeftGear, -1.0f, 1.0f) * maxSpeed;
-        moveRightGear = Mathf.Clamp(moveRightGear, -1.0f, 1.0f) * maxSpeed;
-
-        float moveX = (-moveRightGear - moveLeftGear) * Mathf.Sqrt(2) / 2;
-        float moveZ = (-moveRightGear + moveLeftGear) * Mathf.Sqrt(2) / 2;
-
-        if (selfRigidbody.position.z * dir >= centerLineZ && moveZ > 0)
-        {
-            // 前進(Z方向)の動きをキャンセル
-            moveZ = 0;
-
-            if (logEnabled)
-            {
-                Debug.Log($"<color=red>[Boundary Limit]</color> AI (ID:{agentID}) tried to cross the center line. Z-velocity clamped.");
-            }
-        }
-        UnityEngine.Vector3 targetVelocity = new UnityEngine.Vector3(moveX * dir, 0f, moveZ * dir);
-        selfRigidbody.linearVelocity = targetVelocity;
-
-        if (logEnabled)
-        {
-            Debug.Log($"<color=magenta>[{gameObject.name}] Action executed. Target Velocity: {targetVelocity.ToString("F3")}</color>");
-            Debug.Log($"<color=yellow>[{gameObject.name}] Inference Time: {inferenceTimer.Elapsed.TotalMilliseconds:F2} ms</color>");
+            // Z軸方向の速度のみを0にする
+            selfRigidbody.velocity = new Vector3(selfRigidbody.velocity.x, 0f, 0f);
         }
     }
 

@@ -627,16 +627,9 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 5000
-  selfRigidbody: {fileID: 53173887}
-  playerMallet: {fileID: 1629546525}
-  puckRigidbody: {fileID: 1629546511}
-  leftWall: {fileID: 0}
-  rightWall: {fileID: 0}
   agentID: 1
-  maxSpeed: 20
-  observationHistorySize: 5
-  logEnabled: 1
-  centerLineZ: 0.5
+  puck: {fileID: 0}
+  enemyMallet: {fileID: 0}
 --- !u!1 &66877009
 GameObject:
   m_ObjectHideFlags: 0
@@ -5445,16 +5438,9 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 5000
-  selfRigidbody: {fileID: 1577599999}
-  playerMallet: {fileID: 1629546525}
-  puckRigidbody: {fileID: 1629546511}
-  leftWall: {fileID: 0}
-  rightWall: {fileID: 0}
   agentID: 1
-  maxSpeed: 20
-  observationHistorySize: 5
-  logEnabled: 1
-  centerLineZ: 0
+  puck: {fileID: 0}
+  enemyMallet: {fileID: 0}
 --- !u!114 &1057951958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8221,16 +8207,9 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 5000
-  selfRigidbody: {fileID: 1629546514}
-  playerMallet: {fileID: 1502185541}
-  puckRigidbody: {fileID: 1629546511}
-  leftWall: {fileID: 2056785417}
-  rightWall: {fileID: 845335954}
   agentID: 0
-  maxSpeed: 20
-  observationHistorySize: 5
-  logEnabled: 1
-  centerLineZ: 0.5
+  puck: {fileID: 1629546507}
+  enemyMallet: {fileID: 1629546509}
 --- !u!114 &1629546524
 MonoBehaviour:
   m_ObjectHideFlags: 0
