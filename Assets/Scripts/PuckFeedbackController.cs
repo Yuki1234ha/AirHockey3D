@@ -81,7 +81,7 @@ public class PuckFeedbackController : MonoBehaviour
     {
         // 掴まれていない場合は何もしない
         if (grabbingInteractor == null) return;
-
+        Debug.Log($"<color=green>PuckFeedbackController: {gameObject.name} has collided with {other.gameObject.name}</color>");
         // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
         if (other.CompareTag("Puck"))
         {
