@@ -15,6 +15,10 @@ public class PuckFeedbackController : MonoBehaviour
     public AudioClip hitSound;
     [Tooltip("効果音を再生するためのAudioSourceコンポーネント")]
     public AudioSource audioSource;
+    [Tooltip("【シーンに配置済みの】ループ再生させるパーティクルエフェクト")]
+    public ParticleSystem hitEffect;
+    [Tooltip("エフェクトが見える時間（秒）")]
+    public float effectVisibleDuration = 0.5f;
     [Tooltip("振動の周波数")]
     [Range(0f, 1f)]
     public float vibrationFrequency = 0.8f;
@@ -34,6 +38,8 @@ public class PuckFeedbackController : MonoBehaviour
     // --- 内部変数 ---
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
+    private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
+    private Coroutine returnEffectCoroutine;
 
     void Awake()
     {
@@ -90,6 +96,7 @@ public class PuckFeedbackController : MonoBehaviour
         {
             ProvideHapticFeedback();
             PlayHitSound();
+            PlayHitEffect(other.ClosestPoint(transform.position));
         }
     }
 
@@ -121,6 +128,25 @@ public class PuckFeedbackController : MonoBehaviour
         {
             audioSource.PlayOneShot(hitSound);
         }
+    }
+
+    void PlayHitEffect(Vector3 position)
+    {
+        if (hitEffect == null) return;
+
+        if (returnEffectCoroutine != null)
+        {
+            StopCoroutine(returnEffectCoroutine);
+        }
+
+        hitEffect.transform.position = position;
+        returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition());
+    }
+
+    private IEnumerator ReturnEffectToWaitPosition()
+    {
+        yield return new WaitForSeconds(effectVisibleDuration);
+        hitEffect.transform.position = effectWaitPosition;
     }
 
     void LateUpdate()

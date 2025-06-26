@@ -28,6 +28,10 @@ public class PuckHitController : MonoBehaviour
     [Tooltip("親オブジェクトにアタッチされているHandGrabInteractable")]
     public HandGrabInteractable interactableObject;
 
+    [Header("衝突設定")]
+    [Tooltip("接触後、親オブジェクト全体の当たり判定を無視する時間")]
+    public float ignoreCollisionDuration = 0.3f;
+
     // --- 内部変数 ---
     private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
@@ -122,6 +126,8 @@ public class PuckHitController : MonoBehaviour
         if (other.CompareTag("Puck"))
         {
             TriggerAssist(other);
+            // 衝突無視を開始
+            StartCoroutine(IgnoreCollisionForDuration(other));
         }
     }
 
@@ -152,6 +158,35 @@ public class PuckHitController : MonoBehaviour
         // 半径が最小値より小さくならないように制限
         assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
         Debug.Log($"<color=orange>Assist Radius shrunk to: {assistTriggerCollider.radius}</color>");
+    }
+
+    private IEnumerator IgnoreCollisionForDuration(Collider puckCollider)
+    {
+        if (puckCollider == null || targetToFollow == null) yield break;
+
+        // 親オブジェクトとその全ての子のコライダーを取得
+        Collider[] allPaddleColliders = targetToFollow.GetComponentsInChildren<Collider>();
+
+        foreach (var paddleCollider in allPaddleColliders)
+        {
+            if (paddleCollider != null)
+            {
+                Physics.IgnoreCollision(paddleCollider, puckCollider, true);
+            }
+        }
+
+        yield return new WaitForSeconds(ignoreCollisionDuration);
+
+        if (puckCollider != null) // 待機中にパックが破棄されていないか確認
+        {
+            foreach (var paddleCollider in allPaddleColliders)
+            {
+                if (paddleCollider != null)
+                {
+                    Physics.IgnoreCollision(paddleCollider, puckCollider, false);
+                }
+            }
+        }
     }
 
     void LateUpdate()

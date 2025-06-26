@@ -1988,6 +1988,7 @@ MonoBehaviour:
   radiusShrinkAmount: 0.1
   minRadius: 0.34
   interactableObject: {fileID: 667281157}
+  ignoreCollisionDuration: 0.5
   targetToFollow: {fileID: 1502185541}
 --- !u!1 &1470509161
 GameObject:
@@ -3103,6 +3104,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitSound: {fileID: 8300000, guid: 653f36802be5242d6b2d4c41ac4898d1, type: 3}
   audioSource: {fileID: 1639101362}
+  hitEffect: {fileID: 1920227693733659315}
+  effectVisibleDuration: 0.3
   vibrationFrequency: 0.8
   vibrationAmplitude: 0.8
   vibrationDuration: 0.1
