@@ -81,20 +81,20 @@ public class AIAgentController : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         // 1. 自分の位置 (XZ平面) (2 float)
-        sensor.AddObservation(transform.localPosition.x * dir);
-        sensor.AddObservation(transform.localPosition.z * dir); // Y -> Z
+        sensor.AddObservation(transform.position.x * dir);
+        sensor.AddObservation(transform.position.z * dir); // Y -> Z
 
         // 2. 自分の速度 (XZ平面) (2 float)
         sensor.AddObservation(selfRigidbody.velocity.x * dir);
         sensor.AddObservation(selfRigidbody.velocity.z * dir); // Y -> Z
 
         // 3. 敵の位置 (XZ平面) (2 float)
-        sensor.AddObservation(playerMallet.transform.localPosition.x * dir);
-        sensor.AddObservation(playerMallet.transform.localPosition.z * dir); // Y -> Z
+        sensor.AddObservation(playerMallet.transform.position.x * dir);
+        sensor.AddObservation(playerMallet.transform.position.z * dir); // Y -> Z
 
         // 4. パックの位置 (XZ平面) (2 float)
-        sensor.AddObservation(puckRigidbody.transform.localPosition.x * dir);
-        sensor.AddObservation(puckRigidbody.transform.localPosition.z * dir); // Y -> Z
+        sensor.AddObservation(puckRigidbody.transform.position.x * dir);
+        sensor.AddObservation(puckRigidbody.transform.position.z * dir); // Y -> Z
 
         // 5. パックの速度 (XZ平面) (2 float)
         Vector3 puck_velocity = puckRigidbody.velocity * dir;
@@ -144,6 +144,39 @@ public class AIAgentController : Agent
     {
         // 意思決定をリクエストし、観測と行動のサイクルを開始する
         this.RequestDecision();
+        // puckの位置を表示するためのデバッグ用ログ
+        if (logEnabled)
+        {
+            Debug.Log($"<color=blue>[{gameObject.name}] Puck Position: {puckRigidbody.transform.position.x * dir}, {puckRigidbody.transform.position.z * dir}</color>");
+            // puckの半径を世界座標系で表示
+            // Colliderのワールド座標でのバウンディングボックスを取得
+            Collider puckCollider = puckRigidbody.GetComponent<Collider>();
+            Bounds colliderBounds = puckCollider.bounds;
+
+            // バウンディングボックスの半分のサイズ (extents) を取得
+            Vector3 extents = colliderBounds.extents;
+
+            // 球体の場合、extentsのどの成分も半径に相当します。
+            // BoxColliderなど他の形状の場合は、extents.xやextents.zが軸方向の半分の長さになります。
+            float worldRadius;
+            if (puckCollider is SphereCollider)
+            {
+                worldRadius = extents.x; // SphereColliderならx, y, zどれでも同じ値
+            }
+            else
+            {
+                // 他のColliderタイプ（例：BoxCollider）の場合、
+                // 軸によってサイズが異なるため、どの軸の「半径」を指すかによって使い分けが必要です。
+                // 例えば、XZ平面上の円形として扱うなら、Mathf.Max(extents.x, extents.z) など。
+                // ここでは球体前提なので、一旦xを使用します。
+                worldRadius = Mathf.Max(extents.x, extents.z); 
+                Debug.LogWarning("SphereCollider以外のColliderタイプです。半径の解釈にご注意ください。");
+            }
+
+            Debug.Log($"PuckのColliderのBounds (ワールド座標): {colliderBounds}");
+            Debug.Log($"PuckのColliderのExtents (ワールド座標での半分のサイズ): {extents}");
+            Debug.Log($"Puckのワールド座標での推定半径: {worldRadius}");
+        }
     }
 
     /// <summary>
@@ -178,8 +211,8 @@ public class AIAgentController : Agent
         selfRigidbody.velocity += new Vector3(dir * current_velocity_x_byNN, 0f, dir * current_velocity_z_byNN);
 
         // プレイヤーの行動範囲を制限するロジック (Z軸で判定)
-        float threthold_z = 1.0f; // 閾値の軸をZに変更
-        if (gameObject.transform.localPosition.z * dir >= threthold_z && selfRigidbody.velocity.z * dir >= 0)
+        float threthold_z = centerLineZ; // 閾値の軸をZに変更
+        if (gameObject.transform.position.z * dir >= threthold_z && selfRigidbody.velocity.z * dir >= 0)
         {
             // Z軸方向の速度のみを0にする
             selfRigidbody.velocity = new Vector3(selfRigidbody.velocity.x, 0f, 0f);
