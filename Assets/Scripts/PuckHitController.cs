@@ -97,7 +97,7 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    void Update()
+    void FixedUpdate()
     {
         // 掴んでいる間だけ、正確な手のスイング速度を計算
         if (grabbingInteractor != null)
@@ -147,7 +147,7 @@ public class PuckHitController : MonoBehaviour
         Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
 
         puckRigidbody.velocity = finalVelocity;
-
+        Debug.Log($"<color=green>{grabberVelocity}Assist triggered! New puck velocity: {finalVelocity}</color>");
         // アシスト半径を縮小
         ShrinkAssistRadius();
     }

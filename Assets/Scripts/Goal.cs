@@ -54,7 +54,7 @@ public class Goal : MonoBehaviour
         // 入ってきたのがパックかどうかをタグで判別
         if (other.CompareTag("Puck"))
         {
-            Debug.Log($"<color=blue>Goal in {goalName}!</color>");
+            //Debug.Log($"<color=blue>Goal in {goalName}!</color>");
             
             // GameManagerにゴールを通知
             if (GameManager.Instance != null)
@@ -86,7 +86,7 @@ public class Goal : MonoBehaviour
         Vector3 spawnPosition = puckResetPoint.position + spawnOffset;
         puckRigidbody.transform.position = spawnPosition;
         puckRigidbody.transform.rotation = Quaternion.identity;
-        Debug.Log("<color=green>Puck has been reset to a random position.</color>");
+        //Debug.Log("<color=green>Puck has been reset to a random position.</color>");
 
         // --- 2. 一定時間待機 ---
         yield return new WaitForSeconds(launchDelay);
@@ -112,6 +112,6 @@ public class Goal : MonoBehaviour
         // パックに力を加えて打ち出す
         puckRigidbody.velocity = launchDirection.normalized * launchForce;
         
-        Debug.Log($"<color=purple>Puck launched for a bank shot off the {(useRightWall ? "Right" : "Left")} wall.</color>");
+        //Debug.Log($"<color=purple>Puck launched for a bank shot off the {(useRightWall ? "Right" : "Left")} wall.</color>");
     }
 }
