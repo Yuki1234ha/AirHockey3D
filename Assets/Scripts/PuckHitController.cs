@@ -35,6 +35,10 @@ public class PuckHitController : MonoBehaviour
     private Vector3 grabberVelocity;
     private float initialRadius;
 
+    [Header("追従設定")]
+    [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
+    public Transform targetToFollow;
+
     void Awake()
     {
         // 自身のSphereColliderを取得し、初期半径を保存
@@ -148,6 +152,15 @@ public class PuckHitController : MonoBehaviour
         // 半径が最小値より小さくならないように制限
         assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
         Debug.Log($"<color=orange>Assist Radius shrunk to: {assistTriggerCollider.radius}</color>");
+    }
+
+    void LateUpdate()
+    {
+        if (targetToFollow != null)
+        {
+            transform.position = targetToFollow.position;
+            transform.rotation = targetToFollow.rotation;
+        }
     }
 }
 

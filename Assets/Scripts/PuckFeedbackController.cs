@@ -28,6 +28,9 @@ public class PuckFeedbackController : MonoBehaviour
     [Tooltip("親オブジェクトにアタッチされているHandGrabInteractable")]
     public HandGrabInteractable interactableObject;
 
+    [Header("追従設定")]
+    [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
+    public Transform targetToFollow;
     // --- 内部変数 ---
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
@@ -117,6 +120,15 @@ public class PuckFeedbackController : MonoBehaviour
         if (audioSource != null && hitSound != null)
         {
             audioSource.PlayOneShot(hitSound);
+        }
+    }
+
+    void LateUpdate()
+    {
+        if (targetToFollow != null)
+        {
+            transform.position = targetToFollow.position;
+            transform.rotation = targetToFollow.rotation;
         }
     }
 }

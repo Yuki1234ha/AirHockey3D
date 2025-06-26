@@ -1988,6 +1988,7 @@ MonoBehaviour:
   radiusShrinkAmount: 0.1
   minRadius: 0.34
   interactableObject: {fileID: 667281157}
+  targetToFollow: {fileID: 1502185541}
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
@@ -3106,6 +3107,7 @@ MonoBehaviour:
   vibrationAmplitude: 0.8
   vibrationDuration: 0.1
   interactableObject: {fileID: 667281157}
+  targetToFollow: {fileID: 1502185541}
 --- !u!1 &1673036238
 GameObject:
   m_ObjectHideFlags: 0
