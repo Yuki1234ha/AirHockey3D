@@ -186,11 +186,11 @@ public class HitAssistController : MonoBehaviour
     // }
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag} with layer {other.gameObject.layer}</color>");
+        //Debug.Log($"<color=blue>OnTriggerEnter: {other.name} with tag {other.tag} with layer {other.gameObject.layer}</color>");
         // 掴まれていない、または速度が足りない場合は何もしない
         if (grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
         {
-            Debug.Log($"<color=red>OnTriggerEnter: {other.name} with tag {other.tag} - Ignored due to low velocity or not grabbed</color>");
+            //Debug.Log($"<color=red>OnTriggerEnter: {other.name} with tag {other.tag} - Ignored due to low velocity or not grabbed</color>");
             return;
         }
 
