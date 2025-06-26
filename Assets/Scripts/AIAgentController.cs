@@ -211,7 +211,7 @@ public class AIAgentController : Agent
         selfRigidbody.velocity += new Vector3(dir * current_velocity_x_byNN, 0f, dir * current_velocity_z_byNN);
 
         // プレイヤーの行動範囲を制限するロジック (Z軸で判定)
-        float threthold_z = centerLineZ; // 閾値の軸をZに変更
+        float threthold_z = centerLineZ * dir; // 閾値の軸をZに変更
         if (gameObject.transform.position.z * dir >= threthold_z && selfRigidbody.velocity.z * dir >= 0)
         {
             // Z軸方向の速度のみを0にする
