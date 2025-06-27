@@ -1773,14 +1773,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 030244c13d9ca4e668e8169b4e7a46e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  goalName: AIGoal
+  typeOfGoal: 1
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 40
   launchDelay: 1
   spawnRadius: 1
-  wallXLeft: -2.59
-  wallXRight: 2.59
+  wallXLeft: -2.55
+  wallXRight: 2.55
 --- !u!1 &1378720636
 GameObject:
   m_ObjectHideFlags: 0
@@ -1901,6 +1901,7 @@ GameObject:
   - component: {fileID: 1432379343}
   - component: {fileID: 1432379340}
   - component: {fileID: 1432379344}
+  - component: {fileID: 1432379345}
   m_Layer: 5
   m_Name: HitArea
   m_TagString: Untagged
@@ -1984,12 +1985,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minAssistVelocity: 1
-  assistImpactMultiplier: 1.5
-  radiusShrinkAmount: 0.1
+  assistImpactMultiplier: 15
+  radiusShrinkAmount: 0.05
   minRadius: 0.34
   interactableObject: {fileID: 667281157}
   ignoreCollisionDuration: 0.5
   targetToFollow: {fileID: 1502185541}
+--- !u!114 &1432379345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432379338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7d8e113ee39b464a9b0528971d88775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fileName: motion_data_with_results.csv
+  loggingInterval: 0
+  interactableObject: {fileID: 667281157}
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2360,6 +2376,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7983652377355990085, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -5852685805039820270, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_Layer
       value: 3
@@ -2382,7 +2402,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1700297128476962758, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.57
+      value: 6.9
       objectReference: {fileID: 0}
     - target: {fileID: -1700297128476962758, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2661,6 +2681,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7669339893890042577, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1629546519}
+    - targetCorrespondingSourceObject: {fileID: 7669339893890042577, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1629546526}
   m_SourcePrefab: {fileID: 100100000, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
 --- !u!1 &1629546507 stripped
 GameObject:
@@ -2872,6 +2895,28 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7803623796662847076, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
   m_PrefabInstance: {fileID: 1629546506}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1629546526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1629546507}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f09a192dc0a34803a44d82e934d7d40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sideToMonitor: 0
+  puckRigidbody: {fileID: 1629546511}
+  maxStallTime: 3
+  puckResetPoint: {fileID: 1830106153}
+  opponentGoal: {fileID: 1697352756}
+  launchForce: 30
+  launchDelay: 1
+  spawnRadius: 1
+  wallXLeft: -2.55
+  wallXRight: 2.55
 --- !u!114 &1629546528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3340,14 +3385,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 030244c13d9ca4e668e8169b4e7a46e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  goalName: PlayerGoal
+  typeOfGoal: 0
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 40
   launchDelay: 1
   spawnRadius: 1
-  wallXLeft: -2.59
-  wallXRight: 2.59
+  wallXLeft: -2.55
+  wallXRight: 2.55
 --- !u!1001 &1766949272
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3394,15 +3439,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalScale.x
-      value: 8.5
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalScale.y
-      value: 8.5
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalScale.z
-      value: 8.5
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3414,7 +3459,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -11.3
+      value: -9.02
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 126d619cf4daa52469682f85c1378b4a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -40784,7 +40829,7 @@ PrefabInstance:
       objectReference: {fileID: 1766949276}
     - target: {fileID: 3162065387456349882, guid: 46fdef3df9a5a354caf7692f85e5eff2, type: 3}
       propertyPath: _speedFactor
-      value: 120
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 3162065387456349882, guid: 46fdef3df9a5a354caf7692f85e5eff2, type: 3}
       propertyPath: _acceleration

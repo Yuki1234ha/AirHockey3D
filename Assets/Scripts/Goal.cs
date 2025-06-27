@@ -1,15 +1,17 @@
-// Goal.cs
-// ゴール判定と、パックの位置リセット、そして壁で1回反射して相手ゴールに入る軌道での自動打ち出しを行います。
-// 各ゴールエリアに設置したTrigger Colliderを持つGameObjectにアタッチしてください。
+// Goal.cs (ロガー連携版)
+// ゴール判定を行い、MotionDataLoggerにその結果を通知します。
 
 using UnityEngine;
-using System.Collections; // コルーチンを使用するために必要
+using System.Collections;
 
 public class Goal : MonoBehaviour
 {
+    // このゴールがどちらのゴールかをInspectorで設定するためのenum
+    public enum GoalType { PlayerGoal, OpponentGoal }
+
     [Header("ゴール設定")]
-    [Tooltip("このゴールがどちらのゴールかを示す名前（例: \"PlayerGoal\", \"AIGoal\"）")]
-    public string goalName;
+    [Tooltip("このゴールがどちらのサイドのゴールか")]
+    public GoalType typeOfGoal;
 
     [Header("パックのリセットと打ち出し設定")]
     [Tooltip("パックが出現する中心点")]
@@ -19,7 +21,7 @@ public class Goal : MonoBehaviour
     public Transform opponentGoal;
 
     [Tooltip("パックを打ち出す際の強さ（速度）")]
-    public float launchForce = 20f;
+    public float launchForce = 10f;
 
     [Tooltip("リセット後、打ち出すまでの待機時間（秒）")]
     public float launchDelay = 1.0f;
@@ -29,37 +31,31 @@ public class Goal : MonoBehaviour
 
     [Header("壁の設定")]
     [Tooltip("左の壁のX座標")]
-    public float wallXLeft = -3.0f;
+    public float wallXLeft = -2.595f;
     [Tooltip("右の壁のX座標")]
-    public float wallXRight = 3.0f;
+    public float wallXRight = 2.595f;
 
-
-    private void Start()
-    {
-        // 必須項目が設定されていない場合に警告を出す
-        if (puckResetPoint == null)
-        {
-            Debug.LogWarning($"[Goal: {gameObject.name}] puckResetPointが設定されていません。パックはリセットされません。");
-        }
-        if (opponentGoal == null)
-        {
-            Debug.LogWarning($"[Goal: {gameObject.name}] opponentGoalが設定されていません。パックは打ち出されません。");
-        }
-    }
 
     // Triggerに他のColliderが入った時に呼ばれる
     [System.Obsolete]
     private void OnTriggerEnter(Collider other)
     {
-        // 入ってきたのがパックかどうかをタグで判別
         if (other.CompareTag("Puck"))
         {
-            //Debug.Log($"<color=blue>Goal in {goalName}!</color>");
-            
-            // GameManagerにゴールを通知
+            // --- ★★★ ロガーへの通知機能 ★★★ ---
+            // MotionDataLoggerのインスタンスが存在する場合
+            if (MotionDataLogger.Instance != null)
+            {
+                // パックのIDと、このゴールの種類（"PlayerGoal" または "OpponentGoal"）を渡して結果を記録
+                int puckInstanceID = other.gameObject.GetInstanceID();
+                MotionDataLogger.Instance.RecordHitResult(puckInstanceID, typeOfGoal.ToString());
+            }
+
+            // GameManagerへの通知など（既存の機能）
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.GoalScored(goalName);
+                 // goalNameの代わりにtypeOfGoal.ToString()を使うと統一できます
+                GameManager.Instance.GoalScored(typeOfGoal.ToString());
             }
 
             // パックのリセットと打ち出し処理を開始
@@ -75,43 +71,28 @@ public class Goal : MonoBehaviour
     private IEnumerator ResetAndLaunchPuckWithBankShot(Rigidbody puckRigidbody)
     {
         if (puckRigidbody == null) yield break;
-
-        // --- 1. パックを停止させ、ランダムな位置にリセット ---
+        
         puckRigidbody.velocity = Vector3.zero;
         puckRigidbody.angularVelocity = Vector3.zero;
 
-        // ResetPointの周り、半径spawnRadiusの円周上にランダムな出現位置を計算
         float randomAngle = Random.Range(0f, 360f);
         Vector3 spawnOffset = new Vector3(Mathf.Cos(randomAngle * Mathf.Deg2Rad), 0, Mathf.Sin(randomAngle * Mathf.Deg2Rad)) * spawnRadius;
         Vector3 spawnPosition = puckResetPoint.position + spawnOffset;
         puckRigidbody.transform.position = spawnPosition;
         puckRigidbody.transform.rotation = Quaternion.identity;
-        //Debug.Log("<color=green>Puck has been reset to a random position.</color>");
-
-        // --- 2. 一定時間待機 ---
+        
         yield return new WaitForSeconds(launchDelay);
 
-        // --- 3. 1回反射する軌道を計算して打ち出す ---
-        
-        // 左右の壁どちらを狙うかランダムに決定
         bool useRightWall = (Random.value > 0.5f);
         float wallX = useRightWall ? wallXRight : wallXLeft;
 
-        // 「仮想のゴール」を使って反射点を計算するテクニック
-        // 1. 壁の向こう側にある、鏡写しの仮想ゴール位置を計算
         Vector3 opponentGoalPos = opponentGoal.position;
         Vector3 virtualGoalPos = new Vector3(wallX + (wallX - opponentGoalPos.x), opponentGoalPos.y, opponentGoalPos.z);
-        virtualGoalPos.y = 0; // Y軸は無視
+        virtualGoalPos.y = 0;
 
-        // 2. 出現位置から仮想ゴールへ向かう方向が、壁に反射して本当のゴールへ向かう方向になる
         Vector3 launchDirection = (virtualGoalPos - spawnPosition).normalized;
-        
-        // Y軸方向の速度は0にする
         launchDirection.y = 0;
 
-        // パックに力を加えて打ち出す
         puckRigidbody.velocity = launchDirection.normalized * launchForce;
-        
-        //Debug.Log($"<color=purple>Puck launched for a bank shot off the {(useRightWall ? "Right" : "Left")} wall.</color>");
     }
 }
