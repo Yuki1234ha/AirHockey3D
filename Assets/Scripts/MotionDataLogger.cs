@@ -107,7 +107,7 @@ public class MotionDataLogger : MonoBehaviour
     {
         if (writer == null) return;
         int assistedFlag = data.WasAssisted ? 1 : 0;
-        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}",
+        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}",
             data.Timestamp, data.Handedness, data.TriggerRadius, assistedFlag,
             data.Position.x, data.Position.y, data.Position.z, data.Rotation.x, data.Rotation.y, data.Rotation.z, data.Rotation.w,
             data.Velocity.x, data.Velocity.y, data.Velocity.z, data.AngularVelocity.x, data.AngularVelocity.y, data.AngularVelocity.z,
