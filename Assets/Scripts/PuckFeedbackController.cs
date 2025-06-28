@@ -102,14 +102,10 @@ public class PuckFeedbackController : MonoBehaviour
         // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
         if (other.CompareTag("Puck"))
         {
-            bool isAssisted = false;
-
-            // MotionDataLoggerのインスタンスが存在するか確認してから呼び出す
-            if(MotionDataLogger.Instance != null)
+            // ★★★ ロガーに「アシストなし接触」を通知 ★★★
+            if (MotionDataLogger.Instance != null)
             {
-                // ヒット情報をロガーに送信する
-                // 引数: (パックのコライダー, 自分のコライダー, 掴んでいる手, アシストの有無)
-                MotionDataLogger.Instance.LogHit(other, assistTriggerCollider, grabbingInteractor, isAssisted);
+                MotionDataLogger.Instance.LogNonAssistedTouch(assistTriggerCollider, grabbingInteractor);
             }
 
             ProvideHapticFeedback();

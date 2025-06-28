@@ -1776,7 +1776,7 @@ MonoBehaviour:
   typeOfGoal: 1
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 40
+  launchForce: 30
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55
@@ -2004,8 +2004,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fileName: motion_data_with_results.csv
-  loggingInterval: 0
-  interactableObject: {fileID: 667281157}
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
@@ -3147,6 +3145,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 108332c037bef4101bd6424ab7c4e3e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minAssistVelocity: 1
   hitSound: {fileID: 8300000, guid: 653f36802be5242d6b2d4c41ac4898d1, type: 3}
   audioSource: {fileID: 1639101362}
   hitEffect: {fileID: 1920227693733659315}
@@ -3388,7 +3387,7 @@ MonoBehaviour:
   typeOfGoal: 0
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 40
+  launchForce: 30
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55

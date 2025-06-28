@@ -1,6 +1,6 @@
-// MotionDataLogger.cs
-// パックをヒットした瞬間の運動情報と、そのショットの結果、
-// そしてアシストの有無を追跡してCSVファイルに記録します。
+// MotionDataLogger.cs (改訂版)
+// 「アシストヒット」と「ただの接触」を明確に区別して記録する。
+// ゴール判定の追跡はアシストヒットのみを対象とする。
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -12,25 +12,22 @@ using Oculus.Interaction.Input;
 
 public class MotionDataLogger : MonoBehaviour
 {
-    // このスクリプトの唯一のインスタンスを保持（他スクリプトからアクセスするため）
     public static MotionDataLogger Instance { get; private set; }
 
     [Header("ロギング設定")]
     [Tooltip("ログを保存するファイル名")]
     public string fileName = "motion_data_final.csv";
 
-    // --- 内部変数 ---
     private string filePath;
     private StreamWriter writer;
-    private Dictionary<int, HitData> _inFlightShots = new Dictionary<int, HitData>();
+    private Dictionary<int, HitData> _inProgressAssistedShots = new Dictionary<int, HitData>();
 
-    // ヒット情報を一時的に保持するための内部クラス
     private class HitData
     {
         public float Timestamp;
         public string Handedness;
         public float TriggerRadius;
-        public bool WasAssisted; // ★★★ アシストの有無を記録するフラグ
+        public bool WasAssisted;
         public Vector3 Position;
         public Quaternion Rotation;
         public Vector3 Velocity;
@@ -40,104 +37,94 @@ public class MotionDataLogger : MonoBehaviour
 
     void Awake()
     {
-        // Singleton パターン
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
         Instance = this;
-
-        // ファイルパスの準備と書き込み開始
-        string dataPath = Path.Combine(Application.dataPath, "Data");
-        if (!Directory.Exists(dataPath))
-        {
-            Directory.CreateDirectory(dataPath);
-        }
-        filePath = Path.Combine(dataPath, fileName);
-        OpenFileForWriting();
+        InitializeFile();
     }
 
-    // ★★★ 他のスクリプトから呼び出すための公開メソッド ★★★
-    public void LogHit(Collider puckCollider, SphereCollider triggerCollider, HandGrabInteractor interactor, bool wasAssisted)
+    // ★★★ アシストがない、ただの接触を記録するメソッド ★★★
+    public void LogNonAssistedTouch(SphereCollider triggerCollider, HandGrabInteractor interactor)
+    {
+        if (triggerCollider == null || interactor == null) return;
+        
+        HitData touchData = CreateBaseHitData(triggerCollider.radius, interactor, false);
+        touchData.Result = "Touch"; // 結果を「Touch」として即時確定
+        WriteDataToFile(touchData);
+    }
+
+    // ★★★ アシストがあるヒットを記録し、結果追跡を開始するメソッド ★★★
+    public void LogAssistedHit(Collider puckCollider, SphereCollider triggerCollider, HandGrabInteractor interactor)
     {
         if (puckCollider == null || triggerCollider == null || interactor == null) return;
 
         int puckInstanceID = puckCollider.gameObject.GetInstanceID();
 
-        // 結果が出ていない前のショットを「ゴールなし」として記録
-        if (_inFlightShots.ContainsKey(puckInstanceID))
+        // もし、このパックで追跡中のアシストショットが既にあれば、それは「NoGoal」として先に記録する
+        if (_inProgressAssistedShots.ContainsKey(puckInstanceID))
         {
-            RecordHitResult(puckInstanceID, "NoGoal");
+            FinalizeInProgressShot(puckInstanceID, "NoGoal");
         }
 
-        // 今回の新しいヒット情報を一時的に記憶
-        CreateNewHitData(puckInstanceID, triggerCollider.radius, interactor, wasAssisted);
+        // 今回の新しいアシストヒット情報を「InProgress」として追跡リストに追加
+        HitData newHit = CreateBaseHitData(triggerCollider.radius, interactor, true);
+        newHit.Result = "InProgress";
+        _inProgressAssistedShots[puckInstanceID] = newHit;
     }
 
-    void CreateNewHitData(int puckInstanceID, float triggerRadius, HandGrabInteractor interactor, bool wasAssisted)
+    // ★★★ ゴールやリセット時に、追跡中のショットの結果を確定させるメソッド ★★★
+    public void FinalizeInProgressShot(int puckInstanceID, string result)
+    {
+        if (_inProgressAssistedShots.TryGetValue(puckInstanceID, out HitData hitData))
+        {
+            hitData.Result = result;
+            WriteDataToFile(hitData);
+            _inProgressAssistedShots.Remove(puckInstanceID); // 処理が完了したのでリストから削除
+        }
+    }
+
+    private HitData CreateBaseHitData(float triggerRadius, HandGrabInteractor interactor, bool wasAssisted)
     {
         IHand hand = interactor.Hand;
-        if (hand == null) return;
-
-        OVRInput.Controller controller = (hand.Handedness == Handedness.Left)
-            ? OVRInput.Controller.LTouch
-            : OVRInput.Controller.RTouch;
-
-        HitData newHit = new HitData
+        OVRInput.Controller controller = (hand.Handedness == Handedness.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
+        return new HitData
         {
             Timestamp = Time.time,
             Handedness = hand.Handedness.ToString(),
             TriggerRadius = triggerRadius,
-            WasAssisted = wasAssisted, // ★★★ アシスト情報を記録
+            WasAssisted = wasAssisted,
             Position = OVRInput.GetLocalControllerPosition(controller),
             Rotation = OVRInput.GetLocalControllerRotation(controller),
             Velocity = OVRInput.GetLocalControllerVelocity(controller),
-            AngularVelocity = OVRInput.GetLocalControllerAngularVelocity(controller),
-            Result = "InProgress"
+            AngularVelocity = OVRInput.GetLocalControllerAngularVelocity(controller)
         };
-
-        _inFlightShots[puckInstanceID] = newHit;
     }
 
-    // Goal.csから呼び出される公開メソッド
-    public void RecordHitResult(int puckInstanceID, string result)
-    {
-        if (_inFlightShots.TryGetValue(puckInstanceID, out HitData hitData))
-        {
-            hitData.Result = result;
-            WriteDataToFile(hitData);
-            _inFlightShots.Remove(puckInstanceID);
-        }
-    }
-
-    void WriteDataToFile(HitData data)
+    private void WriteDataToFile(HitData data)
     {
         if (writer == null) return;
-
-        // wasAssistedを1(true)または0(false)に変換
         int assistedFlag = data.WasAssisted ? 1 : 0;
-
         string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}",
-            data.Timestamp, data.Handedness, data.TriggerRadius, assistedFlag, // ★★★ WasAssisted列を追加
-            data.Position.x, data.Position.y, data.Position.z,
-            data.Rotation.x, data.Rotation.y, data.Rotation.z, data.Rotation.w,
-            data.Velocity.x, data.Velocity.y, data.Velocity.z,
-            data.AngularVelocity.x, data.AngularVelocity.y, data.AngularVelocity.z,
-            data.Result
-        );
+            data.Timestamp, data.Handedness, data.TriggerRadius, assistedFlag,
+            data.Position.x, data.Position.y, data.Position.z, data.Rotation.x, data.Rotation.y, data.Rotation.z, data.Rotation.w,
+            data.Velocity.x, data.Velocity.y, data.Velocity.z, data.AngularVelocity.x, data.AngularVelocity.y, data.AngularVelocity.z,
+            data.Result);
         writer.WriteLine(line);
-        Debug.Log($"<color=cyan>Motion data with result '{data.Result}', radius '{data.TriggerRadius}', Assisted: {data.WasAssisted} logged.</color>");
+        Debug.Log($"<color=cyan>Data Logged: Result='{data.Result}', Assisted='{data.WasAssisted}'</color>");
     }
 
-    void OpenFileForWriting()
+    private void InitializeFile()
     {
+        string dataPath = Path.Combine(Application.dataPath, "Data");
+        if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
+        filePath = Path.Combine(dataPath, fileName);
         bool fileExists = File.Exists(filePath);
         writer = new StreamWriter(filePath, true, Encoding.UTF8);
-
         if (!fileExists)
         {
-            // ★★★ ヘッダーを更新 ★★★
             string header = "Timestamp,Hand,TriggerRadius,WasAssisted,PosX,PosY,PosZ,RotX,RotY,RotZ,RotW,VelX,VelY,VelZ,AngVelX,AngVelY,AngVelZ,Result";
             writer.WriteLine(header);
         }
@@ -145,17 +132,10 @@ public class MotionDataLogger : MonoBehaviour
 
     void OnApplicationQuit()
     {
-        foreach (var shot in _inFlightShots.Values)
+        foreach (var key in _inProgressAssistedShots.Keys)
         {
-            shot.Result = "NoGoal";
-            WriteDataToFile(shot);
+            FinalizeInProgressShot(key, "NoGoal_Quit");
         }
-
-        if (writer != null)
-        {
-            writer.Close();
-            writer = null;
-            Debug.Log($"<color=green>Motion data logging completed. Data saved to: {filePath}</color>");
-        }
+        if (writer != null) writer.Close();
     }
 }

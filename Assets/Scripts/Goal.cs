@@ -1,63 +1,38 @@
-// Goal.cs (ロガー連携版)
-// ゴール判定を行い、MotionDataLoggerにその結果を通知します。
+// Goal.cs (改訂版)
+// ゴール判定を行い、パックのリセット前に追跡中のショットがあれば
+// それを確定させてから、MotionDataLoggerにゴール結果を通知する。
 
 using UnityEngine;
 using System.Collections;
 
 public class Goal : MonoBehaviour
 {
-    // このゴールがどちらのゴールかをInspectorで設定するためのenum
     public enum GoalType { PlayerGoal, OpponentGoal }
-
     [Header("ゴール設定")]
-    [Tooltip("このゴールがどちらのサイドのゴールか")]
     public GoalType typeOfGoal;
-
     [Header("パックのリセットと打ち出し設定")]
-    [Tooltip("パックが出現する中心点")]
     public Transform puckResetPoint;
-
-    [Tooltip("打ち出しのターゲットとなる相手のゴール")]
     public Transform opponentGoal;
-
-    [Tooltip("パックを打ち出す際の強さ（速度）")]
     public float launchForce = 10f;
-
-    [Tooltip("リセット後、打ち出すまでの待機時間（秒）")]
     public float launchDelay = 1.0f;
-
-    [Tooltip("パックが出現する中心点からの半径")]
     public float spawnRadius = 1.0f;
-
     [Header("壁の設定")]
-    [Tooltip("左の壁のX座標")]
     public float wallXLeft = -2.595f;
-    [Tooltip("右の壁のX座標")]
     public float wallXRight = 2.595f;
 
-
-    // Triggerに他のColliderが入った時に呼ばれる
     [System.Obsolete]
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Puck"))
         {
-            // --- ★★★ ロガーへの通知機能 ★★★ ---
-            // MotionDataLoggerのインスタンスが存在する場合
+            // ★★★ ロガーにゴール結果を通知 ★★★
             if (MotionDataLogger.Instance != null)
             {
-                // パックのIDと、このゴールの種類（"PlayerGoal" または "OpponentGoal"）を渡して結果を記録
                 int puckInstanceID = other.gameObject.GetInstanceID();
-                MotionDataLogger.Instance.RecordHitResult(puckInstanceID, typeOfGoal.ToString());
+                // このゴールが最終結果であることを通知
+                MotionDataLogger.Instance.FinalizeInProgressShot(puckInstanceID, typeOfGoal.ToString());
             }
-
-            // GameManagerへの通知など（既存の機能）
-            if (GameManager.Instance != null)
-            {
-                 // goalNameの代わりにtypeOfGoal.ToString()を使うと統一できます
-                GameManager.Instance.GoalScored(typeOfGoal.ToString());
-            }
-
+            
             // パックのリセットと打ち出し処理を開始
             if (puckResetPoint != null && opponentGoal != null)
             {
@@ -66,11 +41,18 @@ public class Goal : MonoBehaviour
         }
     }
 
-    // パックをリセットし、壁で1反射する軌道で打ち出すコルーチン
     [System.Obsolete]
     private IEnumerator ResetAndLaunchPuckWithBankShot(Rigidbody puckRigidbody)
     {
         if (puckRigidbody == null) yield break;
+        
+        // ★★★ パックを動かす直前に、追跡中のショットがあれば「NoGoal」として確定させる ★★★
+        // ゴールに入らずにリセットされるケース（StallResetterなど）を想定
+        if (MotionDataLogger.Instance != null)
+        {
+            // このリセットがゴールによるものではない場合、前のショットはNoGoalだったことになる
+            MotionDataLogger.Instance.FinalizeInProgressShot(puckRigidbody.gameObject.GetInstanceID(), "NoGoal_Reset");
+        }
         
         puckRigidbody.velocity = Vector3.zero;
         puckRigidbody.angularVelocity = Vector3.zero;
