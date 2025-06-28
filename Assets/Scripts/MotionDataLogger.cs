@@ -113,6 +113,7 @@ public class MotionDataLogger : MonoBehaviour
             data.Velocity.x, data.Velocity.y, data.Velocity.z, data.AngularVelocity.x, data.AngularVelocity.y, data.AngularVelocity.z,
             data.Result);
         writer.WriteLine(line);
+        writer.Flush();
         Debug.Log($"<color=cyan>Data Logged: Result='{data.Result}', Assisted='{data.WasAssisted}'</color>");
     }
 
@@ -127,6 +128,7 @@ public class MotionDataLogger : MonoBehaviour
         {
             string header = "Timestamp,Hand,TriggerRadius,WasAssisted,PosX,PosY,PosZ,RotX,RotY,RotZ,RotW,VelX,VelY,VelZ,AngVelX,AngVelY,AngVelZ,Result";
             writer.WriteLine(header);
+            writer.Flush();
         }
     }
 
