@@ -1,6 +1,6 @@
 // MotionDataLogger.cs
 // パックをヒットした瞬間の運動情報と、そのショットの結果、
-// そしてヒット時のトリガー半径を追跡してCSVファイルに記録します。
+// そしてアシストの有無を追跡してCSVファイルに記録します。
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -10,47 +10,33 @@ using Oculus.Interaction;
 using Oculus.Interaction.HandGrab;
 using Oculus.Interaction.Input;
 
-// このスクリプトはSphereColliderを持つオブジェクトにアタッチされることを想定
-[RequireComponent(typeof(SphereCollider))]
 public class MotionDataLogger : MonoBehaviour
 {
-    // このスクリプトの唯一のインスタンスを保持（Goal.csからアクセスするため）
+    // このスクリプトの唯一のインスタンスを保持（他スクリプトからアクセスするため）
     public static MotionDataLogger Instance { get; private set; }
 
     [Header("ロギング設定")]
     [Tooltip("ログを保存するファイル名")]
-    public string fileName = "motion_data_with_results.csv";
-    [Tooltip("記録する間隔（秒）。0にすると毎ヒット記録します。")]
-    public float loggingInterval = 0f;
-
-    [Header("Interaction SDK 設定")]
-    [Tooltip("親オブジェクトにアタッチされているHandGrabInteractable")]
-    public HandGrabInteractable interactableObject;
+    public string fileName = "motion_data_final.csv";
 
     // --- 内部変数 ---
-    private IInteractableView interactable;
-    private HandGrabInteractor grabbingInteractor = null;
     private string filePath;
     private StreamWriter writer;
-    private float lastLogTime = 0f;
-    private SphereCollider triggerCollider; // ★★★ トリガーの半径を取得するための変数
+    private Dictionary<int, HitData> _inFlightShots = new Dictionary<int, HitData>();
 
     // ヒット情報を一時的に保持するための内部クラス
     private class HitData
     {
         public float Timestamp;
         public string Handedness;
-        public float TriggerRadius; // ★★★ 半径を記録するフィールドを追加
+        public float TriggerRadius;
+        public bool WasAssisted; // ★★★ アシストの有無を記録するフラグ
         public Vector3 Position;
         public Quaternion Rotation;
         public Vector3 Velocity;
         public Vector3 AngularVelocity;
         public string Result;
     }
-
-    // 「どのパック」が「どのヒット情報」で打たれたかを追跡する辞書
-    private Dictionary<int, HitData> _inFlightShots = new Dictionary<int, HitData>();
-
 
     void Awake()
     {
@@ -62,17 +48,6 @@ public class MotionDataLogger : MonoBehaviour
         }
         Instance = this;
 
-        // ★★★ 自身のSphereColliderへの参照を取得 ★★★
-        triggerCollider = GetComponent<SphereCollider>();
-
-        interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
-        if (interactable == null)
-        {
-            Debug.LogError("HandGrabInteractableコンポーネントが見つかりません！", this);
-            this.enabled = false;
-            return;
-        }
-
         // ファイルパスの準備と書き込み開始
         string dataPath = Path.Combine(Application.dataPath, "Data");
         if (!Directory.Exists(dataPath))
@@ -83,62 +58,26 @@ public class MotionDataLogger : MonoBehaviour
         OpenFileForWriting();
     }
 
-    void OnEnable()
+    // ★★★ 他のスクリプトから呼び出すための公開メソッド ★★★
+    public void LogHit(Collider puckCollider, SphereCollider triggerCollider, HandGrabInteractor interactor, bool wasAssisted)
     {
-        if (interactable != null)
-        {
-            interactable.WhenSelectingInteractorViewAdded += HandleInteractorViewAdded;
-            interactable.WhenSelectingInteractorViewRemoved += HandleInteractorViewRemoved;
-        }
-    }
+        if (puckCollider == null || triggerCollider == null || interactor == null) return;
 
-    void OnDisable()
-    {
-        if (interactable != null)
-        {
-            interactable.WhenSelectingInteractorViewAdded -= HandleInteractorViewAdded;
-            interactable.WhenSelectingInteractorViewRemoved -= HandleInteractorViewRemoved;
-        }
-    }
+        int puckInstanceID = puckCollider.gameObject.GetInstanceID();
 
-    private void HandleInteractorViewAdded(IInteractorView interactorView)
-    {
-        grabbingInteractor = interactorView as HandGrabInteractor;
-    }
-
-    private void HandleInteractorViewRemoved(IInteractorView interactorView)
-    {
-        if ((object)interactorView == grabbingInteractor)
+        // 結果が出ていない前のショットを「ゴールなし」として記録
+        if (_inFlightShots.ContainsKey(puckInstanceID))
         {
-            grabbingInteractor = null;
-        }
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (grabbingInteractor == null || Time.time < lastLogTime + loggingInterval)
-        {
-            return;
+            RecordHitResult(puckInstanceID, "NoGoal");
         }
 
-        if (other.CompareTag("Puck"))
-        {
-            int puckInstanceID = other.gameObject.GetInstanceID();
-
-            if (_inFlightShots.ContainsKey(puckInstanceID))
-            {
-                RecordHitResult(puckInstanceID, "NoGoal");
-            }
-
-            // ★★★ 新しいヒット情報（半径を含む）を一時的に記憶 ★★★
-            CreateNewHitData(puckInstanceID);
-            lastLogTime = Time.time;
-        }
+        // 今回の新しいヒット情報を一時的に記憶
+        CreateNewHitData(puckInstanceID, triggerCollider.radius, interactor, wasAssisted);
     }
 
-    void CreateNewHitData(int puckInstanceID)
+    void CreateNewHitData(int puckInstanceID, float triggerRadius, HandGrabInteractor interactor, bool wasAssisted)
     {
-        IHand hand = grabbingInteractor.Hand;
+        IHand hand = interactor.Hand;
         if (hand == null) return;
 
         OVRInput.Controller controller = (hand.Handedness == Handedness.Left)
@@ -149,7 +88,8 @@ public class MotionDataLogger : MonoBehaviour
         {
             Timestamp = Time.time,
             Handedness = hand.Handedness.ToString(),
-            TriggerRadius = triggerCollider.radius, // ★★★ ヒットした瞬間の半径を記録
+            TriggerRadius = triggerRadius,
+            WasAssisted = wasAssisted, // ★★★ アシスト情報を記録
             Position = OVRInput.GetLocalControllerPosition(controller),
             Rotation = OVRInput.GetLocalControllerRotation(controller),
             Velocity = OVRInput.GetLocalControllerVelocity(controller),
@@ -175,9 +115,11 @@ public class MotionDataLogger : MonoBehaviour
     {
         if (writer == null) return;
 
-        // ★★★ CSVの1行を更新 ★★★
-        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}",
-            data.Timestamp, data.Handedness, data.TriggerRadius, // 半径を追加
+        // wasAssistedを1(true)または0(false)に変換
+        int assistedFlag = data.WasAssisted ? 1 : 0;
+
+        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16}",
+            data.Timestamp, data.Handedness, data.TriggerRadius, assistedFlag, // ★★★ WasAssisted列を追加
             data.Position.x, data.Position.y, data.Position.z,
             data.Rotation.x, data.Rotation.y, data.Rotation.z, data.Rotation.w,
             data.Velocity.x, data.Velocity.y, data.Velocity.z,
@@ -185,9 +127,8 @@ public class MotionDataLogger : MonoBehaviour
             data.Result
         );
         writer.WriteLine(line);
-        Debug.Log($"<color=cyan>Motion data with result '{data.Result}' and radius '{data.TriggerRadius}' logged.</color>");
+        Debug.Log($"<color=cyan>Motion data with result '{data.Result}', radius '{data.TriggerRadius}', Assisted: {data.WasAssisted} logged.</color>");
     }
-
 
     void OpenFileForWriting()
     {
@@ -197,7 +138,7 @@ public class MotionDataLogger : MonoBehaviour
         if (!fileExists)
         {
             // ★★★ ヘッダーを更新 ★★★
-            string header = "Timestamp,Hand,TriggerRadius,PosX,PosY,PosZ,RotX,RotY,RotZ,RotW,VelX,VelY,VelZ,AngVelX,AngVelY,AngVelZ,Result";
+            string header = "Timestamp,Hand,TriggerRadius,WasAssisted,PosX,PosY,PosZ,RotX,RotY,RotZ,RotW,VelX,VelY,VelZ,AngVelX,AngVelY,AngVelZ,Result";
             writer.WriteLine(header);
         }
     }
@@ -214,8 +155,7 @@ public class MotionDataLogger : MonoBehaviour
         {
             writer.Close();
             writer = null;
-            Debug.Log($"CSV file saved at: {filePath}");
+            Debug.Log($"<color=green>Motion data logging completed. Data saved to: {filePath}</color>");
         }
     }
 }
-

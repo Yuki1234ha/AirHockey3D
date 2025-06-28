@@ -11,6 +11,8 @@ using Oculus.Interaction.Input;
 public class PuckFeedbackController : MonoBehaviour
 {
     [Header("フィードバック設定")]
+    [Tooltip("アシスト機能が作動する、手の最低スイング速度")]
+    public float minAssistVelocity = 1.0f;
     [Tooltip("接触時に再生する効果音")]
     public AudioClip hitSound;
     [Tooltip("効果音を再生するためのAudioSourceコンポーネント")]
@@ -36,13 +38,19 @@ public class PuckFeedbackController : MonoBehaviour
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
     // --- 内部変数 ---
+    private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
     private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
     private Coroutine returnEffectCoroutine;
+    private Vector3 grabberVelocity;
+    private float initialRadius;
 
     void Awake()
     {
+        // 自身のSphereColliderを取得し、初期半径を保存
+        assistTriggerCollider = GetComponent<SphereCollider>();
+        initialRadius = assistTriggerCollider.radius;
         // 自分または親からHandGrabInteractableコンポーネントを探す
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
         if (interactable == null)
@@ -94,6 +102,16 @@ public class PuckFeedbackController : MonoBehaviour
         // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
         if (other.CompareTag("Puck"))
         {
+            bool isAssisted = false;
+
+            // MotionDataLoggerのインスタンスが存在するか確認してから呼び出す
+            if(MotionDataLogger.Instance != null)
+            {
+                // ヒット情報をロガーに送信する
+                // 引数: (パックのコライダー, 自分のコライダー, 掴んでいる手, アシストの有無)
+                MotionDataLogger.Instance.LogHit(other, assistTriggerCollider, grabbingInteractor, isAssisted);
+            }
+
             ProvideHapticFeedback();
             PlayHitSound();
             PlayHitEffect(other.ClosestPoint(transform.position));

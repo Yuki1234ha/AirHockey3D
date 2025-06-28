@@ -125,9 +125,21 @@ public class PuckHitController : MonoBehaviour
         // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
         {
-            TriggerAssist(other);
-            // 衝突無視を開始
-            StartCoroutine(IgnoreCollisionForDuration(other));
+            bool isAssisted = grabberVelocity.magnitude >= minAssistVelocity;
+
+            // MotionDataLoggerのインスタンスが存在するか確認してから呼び出す
+            if(MotionDataLogger.Instance != null)
+            {
+                // ヒット情報をロガーに送信する
+                // 引数: (パックのコライダー, 自分のコライダー, 掴んでいる手, アシストの有無)
+                MotionDataLogger.Instance.LogHit(other, assistTriggerCollider, grabbingInteractor, isAssisted);
+            }
+
+            // アシストが作動した場合のみ、打ち返しと半径縮小を実行
+            if (isAssisted)
+            {
+                TriggerAssist(other);
+            }
         }
     }
 
