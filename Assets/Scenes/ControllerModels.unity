@@ -2520,8 +2520,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1693101569311283095, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1693101569311283095, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: -800128306901452786, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
     - target: {fileID: 7669339893890042577, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
       propertyPath: m_Layer
       value: 7
@@ -3155,7 +3159,7 @@ MonoBehaviour:
   vibrationAmplitude: 0.8
   vibrationDuration: 0.1
   interactableObject: {fileID: 667281157}
-  targetToFollow: {fileID: 1502185541}
+  targetToFollow: {fileID: 1676674349}
 --- !u!1 &1673036238
 GameObject:
   m_ObjectHideFlags: 0
@@ -3277,6 +3281,7 @@ GameObject:
   - component: {fileID: 1676674352}
   - component: {fileID: 1676674351}
   - component: {fileID: 1676674350}
+  - component: {fileID: 1676674354}
   m_Layer: 3
   m_Name: paddle1 (2)
   m_TagString: Untagged
@@ -3403,6 +3408,20 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1676674348}
   m_Mesh: {fileID: 1456392489332363788, guid: 117bcbd324c8c49789547e3ed0acb110, type: 3}
+--- !u!114 &1676674354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676674348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1731c8bbf7364844b0bf608e2c98a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1502185541}
+  smoothSpeed: 0.5
 --- !u!1 &1697352752
 GameObject:
   m_ObjectHideFlags: 0
