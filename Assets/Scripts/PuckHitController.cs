@@ -42,6 +42,7 @@ public class PuckHitController : MonoBehaviour
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
+    private int HitShrinkCount = 0;
 
     void Awake()
     {
@@ -152,8 +153,12 @@ public class PuckHitController : MonoBehaviour
         // 3. パックに速度を適用
         puckRigidbody.velocity = finalVelocity;
 
+        HitShrinkCount++;
         // 4. アシスト成功時に半径を縮小
-        ShrinkAssistRadius();
+        if (HitShrinkCount % 3 == 0) // 3回ヒットごとに半径を縮小
+        {
+            ShrinkAssistRadius();
+        }
     }
 
     void ShrinkAssistRadius()

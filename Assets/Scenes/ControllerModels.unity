@@ -1987,9 +1987,9 @@ MonoBehaviour:
   minAssistVelocity: 1
   assistImpactMultiplier: 15
   radiusShrinkAmount: 0.05
-  minRadius: 0.34
+  minRadius: 0.4
   interactableObject: {fileID: 667281157}
-  ignoreCollisionDuration: 0.5
+  ignoreCollisionDuration: 1
   targetToFollow: {fileID: 1502185541}
 --- !u!114 &1432379345
 MonoBehaviour:
