@@ -18,6 +18,11 @@ public class EpisodeLogger : MonoBehaviour
     public string episodeSummaryFileName = "episode_summary.csv";
     [Tooltip("各ヒットの詳細データを保存するファイル名")]
     public string hitDetailsFileName = "hit_details.csv";
+    [Header("難易度連携設定")]
+    [Tooltip("半径を縮小させる間隔（エピソード数）")]
+    public int shrinkEpisodeInterval = 3;
+    [Tooltip("制御対象のPuckHitController")]
+    public PuckHitController puckHitController;
 
     // --- 内部変数 ---
     private StreamWriter _episodeWriter;
@@ -67,6 +72,13 @@ public class EpisodeLogger : MonoBehaviour
         _episodeID++;
         _currentEpisode = new EpisodeData(_episodeID);
         _isEpisodeActive = true;
+
+         // ★★★ 一定エピソードごとに半径を縮小させる ★★★
+        if (puckHitController != null && _episodeID > 0 && _episodeID % shrinkEpisodeInterval == 0)
+        {
+            puckHitController.ShrinkAssistRadius();
+            Debug.Log($"<color=magenta>Episode {_episodeID}: Shrinking hit radius.</color>");
+        }
         Debug.Log($"<color=yellow>--- Episode {_episodeID} Started ---</color>");
     }
 
@@ -116,7 +128,7 @@ public class EpisodeLogger : MonoBehaviour
         // エピソードスコアを計算（例）
         // ゴール成功で+1000点、ヒット数が少ないほど高得点、正確性が高いほど高得点
         float score = (result == "OpponentGoal" ? 1000 : 0) 
-                      - (_currentEpisode.HitCount_Assisted + _currentEpisode.HitCount_NonAssisted) * 10
+                    - (_currentEpisode.HitCount_Assisted* 10 + _currentEpisode.HitCount_NonAssisted) 
                       + avgAccuracy * 100;
 
         // エピソード集計データを書き込み

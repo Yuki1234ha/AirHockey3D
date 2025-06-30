@@ -173,10 +173,10 @@ public class PuckHitController : MonoBehaviour
 
         HitShrinkCount++;
         // 4. アシスト成功時に半径を縮小
-        if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
-        {
-            ShrinkAssistRadius();
-        }
+        // if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
+        // {
+        //     ShrinkAssistRadius();
+        // }
         // 5. パックの衝突を一時的に無視する
         DisableAllCollisionsForDuration(ignoreCollisionDuration);
         if(planarFollower != null)
@@ -187,7 +187,7 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    void ShrinkAssistRadius()
+    public void ShrinkAssistRadius()
     {
         float newRadius = assistTriggerCollider.radius - radiusShrinkAmount;
         // 半径が最小値より小さくならないように制限
