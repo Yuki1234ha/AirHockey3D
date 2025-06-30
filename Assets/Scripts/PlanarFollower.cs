@@ -1,14 +1,17 @@
 // PlanarFollower.cs
 // 指定したターゲットオブジェクトのXZ平面上の動きに追従し、Y軸の高さを固定するためのスクリプト。
 // VRにおける物理オブジェクトの安定した操作を実現します。
+// ★★★ 衝突時に追従を一時停止する機能を追加 ★★★
 
 using UnityEngine;
+using System.Collections; // Coroutinesのために必要
 
 public class PlanarFollower : MonoBehaviour
 {
     [Header("追従設定")]
     [Tooltip("追従する対象のTransform（VRで掴むマレットなど）を設定します")]
     public Transform target;
+
     private float fixedYPosition;
 
     [Tooltip("動きの滑らかさ。値が小さいほど滑らかに（遅れて）追従します。0に近いと追従しません。")]
@@ -16,6 +19,7 @@ public class PlanarFollower : MonoBehaviour
     public float smoothSpeed = 0.5f;
 
     private Rigidbody selfRigidbody;
+    private bool isFollowingEnabled = true; // 追従が有効かどうかのフラグ
 
     void Awake()
     {
@@ -35,8 +39,8 @@ public class PlanarFollower : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        // 追従対象が設定されていなければ、何もしない
-        if (target == null)
+        // 追従が無効化されている場合や、ターゲットがない場合は何もしない
+        if (!isFollowingEnabled || target == null)
         {
             return;
         }
@@ -55,5 +59,35 @@ public class PlanarFollower : MonoBehaviour
         // 4. 回転も追従させる場合は、以下の行のコメントを解除します。
         // Quaternion smoothedRotation = Quaternion.Lerp(selfRigidbody.rotation, target.rotation, smoothSpeed);
         // selfRigidbody.MoveRotation(smoothedRotation);
+    }
+
+    // --- 他のスクリプトから追従を制御するための公開メソッド ---
+
+    /// <summary>
+    /// 指定した時間だけ、オブジェクトの追従を一時停止します。
+    /// </summary>
+    /// <param name="duration">停止する時間（秒）</param>
+    [System.Obsolete]
+    public void PauseFollowing(float duration)
+    {
+        // 既に停止中の場合は、新しく停止処理を開始しない
+        if (!isFollowingEnabled) return;
+
+        StartCoroutine(PauseCoroutine(duration));
+    }
+
+    [System.Obsolete]
+    private IEnumerator PauseCoroutine(float duration)
+    {
+        isFollowingEnabled = false;
+        // Rigidbodyの速度をゼロにして、その場でピタッと停止させる
+        selfRigidbody.velocity = Vector3.zero;
+        selfRigidbody.angularVelocity = Vector3.zero;
+
+        // 指定された時間待機
+        yield return new WaitForSeconds(duration);
+
+        // 追従を再開
+        isFollowingEnabled = true;
     }
 }

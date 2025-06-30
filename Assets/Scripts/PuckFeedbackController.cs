@@ -10,6 +10,8 @@ using Oculus.Interaction.Input;
 
 public class PuckFeedbackController : MonoBehaviour
 {
+    [Tooltip("判定に使うSphereCollider")]
+    public SphereCollider assistTriggerCollider;
     [Header("フィードバック設定")]
     [Tooltip("アシスト機能が作動する、手の最低スイング速度")]
     public float minAssistVelocity = 1.0f;
@@ -38,7 +40,6 @@ public class PuckFeedbackController : MonoBehaviour
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
     // --- 内部変数 ---
-    private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
     private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
@@ -49,7 +50,7 @@ public class PuckFeedbackController : MonoBehaviour
     void Awake()
     {
         // 自身のSphereColliderを取得し、初期半径を保存
-        assistTriggerCollider = GetComponent<SphereCollider>();
+        //assistTriggerCollider = GetComponent<SphereCollider>();
         initialRadius = assistTriggerCollider.radius;
         // 自分または親からHandGrabInteractableコンポーネントを探す
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();

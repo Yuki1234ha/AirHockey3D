@@ -42,6 +42,9 @@ public class PuckHitController : MonoBehaviour
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
+    [Header("追従制御")]
+    [Tooltip("物理マレットについているPlanarFollowerスクリプト")]
+    public PlanarFollower planarFollower;
     private int HitShrinkCount = 0;
 
     void Awake()
@@ -158,6 +161,14 @@ public class PuckHitController : MonoBehaviour
         if (HitShrinkCount % 3 == 0) // 3回ヒットごとに半径を縮小
         {
             ShrinkAssistRadius();
+        }
+        // 5. パックの衝突を一時的に無視する
+        IgnoreCollisionForDuration(puckCollider);
+        if(planarFollower != null)
+            {
+                // PuckHitControllerにはignoreCollisionDurationがないため、
+                // 一時的に固定値（例: 0.2f）を使うか、フィールドを追加してください。
+                planarFollower.PauseFollowing(ignoreCollisionDuration); 
         }
     }
 
