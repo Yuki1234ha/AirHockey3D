@@ -163,7 +163,7 @@ public class PuckHitController : MonoBehaviour
         Vector3 puckPosXZ = new Vector3(puckCollider.transform.position.x, 0, puckCollider.transform.position.z);
         Vector3 idealNormalXZ = (malletPosXZ - puckPosXZ).normalized;
         Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
-        //Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
+        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
         float speedXZ = grabberVelocityXZ.magnitude;
         Vector3 finalVelocity = idealNormalXZ * speedXZ * assistImpactMultiplier;
         puckRigidbody.velocity = finalVelocity;
