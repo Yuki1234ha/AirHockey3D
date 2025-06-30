@@ -39,6 +39,9 @@ public class PuckFeedbackController : MonoBehaviour
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
+    [Header("連携設定")]
+    [Tooltip("クールダウン状態を参照するためのPuckHitController")]
+    public PuckHitController hitController;
     // --- 内部変数 ---
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
@@ -95,27 +98,32 @@ public class PuckFeedbackController : MonoBehaviour
     }
 
     // パックとの接触を検知
-    void OnTriggerEnter(Collider other)
-    {
-        // 掴まれていない場合は何もしない
-        if (grabbingInteractor == null) return;
-        //Debug.Log($"<color=green>PuckFeedbackController: {gameObject.name} has collided with {other.gameObject.name}</color>");
-        // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
-        if (other.CompareTag("Puck"))
-        {
-            // ★★★ ロガーに「アシストなし接触」を通知 ★★★
-            if (MotionDataLogger.Instance != null)
-            {
-                MotionDataLogger.Instance.LogNonAssistedTouch(assistTriggerCollider, grabbingInteractor);
-            }
+    // void OnTriggerEnter(Collider other)
+    // {
+    //     // 掴まれていない場合は何もしない
+    //     if (hitController != null && !hitController.canHit) return;
+    //     if (grabbingInteractor == null || hitController.grabberVelocity.magnitude > minAssistVelocity)
+    //     {
+    //         // 掴んでいない、または掴んでいる手の速度が十分でない場合は何もしない
+    //         return;
+    //     }
+    //     //Debug.Log($"<color=green>PuckFeedbackController: {gameObject.name} has collided with {other.gameObject.name}</color>");
+    //     // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
+    //     if (other.CompareTag("Puck"))
+    //     {
+    //         // ★★★ ロガーに「アシストなし接触」を通知 ★★★
+    //         if (MotionDataLogger.Instance != null)
+    //         {
+    //             MotionDataLogger.Instance.LogNonAssistedTouch(assistTriggerCollider, grabbingInteractor);
+    //         }
 
-            ProvideHapticFeedback();
-            PlayHitSound();
-            PlayHitEffect(other.ClosestPoint(transform.position));
-        }
-    }
+    //         ProvideHapticFeedback();
+    //         PlayHitSound();
+    //         PlayHitEffect(other.ClosestPoint(transform.position));
+    //     }
+    // }
 
-    void ProvideHapticFeedback()
+    public void ProvideHapticFeedback()
     {
         if (grabbingInteractor != null)
         {
@@ -137,7 +145,7 @@ public class PuckFeedbackController : MonoBehaviour
         OVRInput.SetControllerVibration(0, 0, controller);
     }
 
-    void PlayHitSound()
+    public void PlayHitSound()
     {
         if (audioSource != null && hitSound != null)
         {
@@ -145,7 +153,7 @@ public class PuckFeedbackController : MonoBehaviour
         }
     }
 
-    void PlayHitEffect(Vector3 position)
+    public void PlayHitEffect(Vector3 position)
     {
         if (hitEffect == null) return;
 

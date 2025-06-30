@@ -31,13 +31,17 @@ public class PuckHitController : MonoBehaviour
     [Header("衝突設定")]
     [Tooltip("接触後、親オブジェクト全体の当たり判定を無視する時間")]
     public float ignoreCollisionDuration = 0.3f;
+    [Header("連携設定")]
+    [Tooltip("フィードバックを提供するためのPuckFeedbackController")]
+    public PuckFeedbackController puckFeedbackController;
 
     // --- 内部変数 ---
     private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
-    private Vector3 grabberVelocity;
+    public Vector3 grabberVelocity;
     private float initialRadius;
+    public bool canHit = true; 
 
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
@@ -52,6 +56,7 @@ public class PuckHitController : MonoBehaviour
         // 自身のSphereColliderを取得し、初期半径を保存
         assistTriggerCollider = GetComponent<SphereCollider>();
         initialRadius = assistTriggerCollider.radius;
+        canHit = true; // 初期状態ではヒット可能
 
         // 親からHandGrabInteractableコンポーネントを探す
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
@@ -121,10 +126,8 @@ public class PuckHitController : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         // 掴まれていない、または速度が足りない場合は処理を中断
-        if (grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
-        {
-            return;
-        }
+        // ヒットが許可されていない、掴んでいない、またはパックでない場合は処理しない
+        if (!canHit || grabbingInteractor == null || !other.CompareTag("Puck") || grabberVelocity.magnitude < minAssistVelocity) return;
 
         // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
@@ -134,6 +137,10 @@ public class PuckHitController : MonoBehaviour
                 MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
             }
 
+            // ヒットフィードバックを提供
+            puckFeedbackController?.ProvideHapticFeedback();
+            puckFeedbackController?.PlayHitSound();
+            puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
             // アシストが作動した場合のみ、打ち返しと半径縮小を実行
             TriggerAssist(other);
         }
@@ -158,14 +165,14 @@ public class PuckHitController : MonoBehaviour
 
         HitShrinkCount++;
         // 4. アシスト成功時に半径を縮小
-        if (HitShrinkCount % 3 == 0) // 3回ヒットごとに半径を縮小
+        if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
         {
             ShrinkAssistRadius();
         }
         // 5. パックの衝突を一時的に無視する
-        IgnoreCollisionForDuration(puckCollider);
+        DisableAllCollisionsForDuration(ignoreCollisionDuration);
         if(planarFollower != null)
-            {
+        {
                 // PuckHitControllerにはignoreCollisionDurationがないため、
                 // 一時的に固定値（例: 0.2f）を使うか、フィールドを追加してください。
                 planarFollower.PauseFollowing(ignoreCollisionDuration); 
@@ -180,33 +187,34 @@ public class PuckHitController : MonoBehaviour
         Debug.Log($"<color=orange>Assist Radius shrunk to: {assistTriggerCollider.radius}</color>");
     }
 
-    private IEnumerator IgnoreCollisionForDuration(Collider puckCollider)
+    private IEnumerator DisableAllCollisionsForDuration(float duration)
     {
-        if (puckCollider == null || targetToFollow == null) yield break;
-
-        // 親オブジェクトとその全ての子のコライダーを取得
+        canHit = false; // 次のヒット判定を無効化
+        
+        // 親オブジェクト（targetToFollow）とその全ての子のコライダーを取得
         Collider[] allPaddleColliders = targetToFollow.GetComponentsInChildren<Collider>();
 
-        foreach (var paddleCollider in allPaddleColliders)
+        // 全てのコライダーを無効化
+        foreach (var col in allPaddleColliders)
         {
-            if (paddleCollider != null)
-            {
-                Physics.IgnoreCollision(paddleCollider, puckCollider, true);
-            }
+            col.enabled = false;
         }
 
-        yield return new WaitForSeconds(ignoreCollisionDuration);
+        // 指定した時間だけ待機
+        yield return new WaitForSeconds(duration);
 
-        if (puckCollider != null) // 待機中にパックが破棄されていないか確認
+        // 全てのコライダーを再度有効化
+        foreach (var col in allPaddleColliders)
         {
-            foreach (var paddleCollider in allPaddleColliders)
+            // 待機中にオブジェクトが破棄されている可能性を考慮
+            if (col != null)
             {
-                if (paddleCollider != null)
-                {
-                    Physics.IgnoreCollision(paddleCollider, puckCollider, false);
-                }
+                col.enabled = true;
             }
         }
+        
+        canHit = true; // ヒット判定を再度有効化
+        Debug.Log("<color=lime>All paddle colliders re-enabled.</color>");
     }
 
     void LateUpdate()

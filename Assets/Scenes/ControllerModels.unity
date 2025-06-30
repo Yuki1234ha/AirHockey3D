@@ -1776,7 +1776,7 @@ MonoBehaviour:
   typeOfGoal: 1
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 25
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55
@@ -1989,7 +1989,10 @@ MonoBehaviour:
   radiusShrinkAmount: 0.05
   minRadius: 0.4
   interactableObject: {fileID: 667281157}
-  ignoreCollisionDuration: 1
+  ignoreCollisionDuration: 0.3
+  puckFeedbackController: {fileID: 1639101364}
+  grabberVelocity: {x: 0, y: 0, z: 0}
+  canHit: 1
   targetToFollow: {fileID: 1676674349}
   planarFollower: {fileID: 1676674354}
 --- !u!114 &1432379345
@@ -3135,7 +3138,7 @@ SphereCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Radius: 1.2
   m_Center: {x: 0, y: 0, z: 0}
@@ -3162,6 +3165,7 @@ MonoBehaviour:
   vibrationDuration: 0.1
   interactableObject: {fileID: 667281157}
   targetToFollow: {fileID: 1676674349}
+  hitController: {fileID: 1432379344}
 --- !u!1 &1673036238
 GameObject:
   m_ObjectHideFlags: 0
@@ -3284,6 +3288,7 @@ GameObject:
   - component: {fileID: 1676674351}
   - component: {fileID: 1676674350}
   - component: {fileID: 1676674354}
+  - component: {fileID: 1676674355}
   m_Layer: 3
   m_Name: paddle1 (2)
   m_TagString: Untagged
@@ -3424,6 +3429,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 1502185541}
   smoothSpeed: 0.5
+--- !u!114 &1676674355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676674348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8af62558d52e47bcad48dd37e293296, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseRotationEuler: {x: -90, y: 0, z: 0}
 --- !u!1 &1697352752
 GameObject:
   m_ObjectHideFlags: 0
@@ -3548,7 +3566,7 @@ MonoBehaviour:
   typeOfGoal: 0
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 25
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55
