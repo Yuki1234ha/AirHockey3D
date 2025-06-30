@@ -165,7 +165,7 @@ public class PuckHitController : MonoBehaviour
         Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
         Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
         float speedXZ = grabberVelocityXZ.magnitude;
-        Vector3 finalVelocity = idealNormalXZ * speedXZ * assistImpactMultiplier;
+        Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
         puckRigidbody.velocity = finalVelocity;
         Debug.Log($"<color=green>PuckHitController: Puck velocity set to {finalVelocity}</color>");
 
