@@ -102,7 +102,7 @@ public class PuckFeedbackController : MonoBehaviour
     // {
     //     // 掴まれていない場合は何もしない
     //     if (hitController != null && !hitController.canHit) return;
-    //     if (grabbingInteractor == null || hitController.grabberVelocity.magnitude > minAssistVelocity)
+    //     if (grabbingInteractor == null || hitController.grabberVelocity.magnitude < minAssistVelocity)
     //     {
     //         // 掴んでいない、または掴んでいる手の速度が十分でない場合は何もしない
     //         return;

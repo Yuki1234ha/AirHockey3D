@@ -127,7 +127,7 @@ public class PuckHitController : MonoBehaviour
     {
         // 掴まれていない、または速度が足りない場合は処理を中断
         // ヒットが許可されていない、掴んでいない、またはパックでない場合は処理しない
-        if (!canHit || grabbingInteractor == null || !other.CompareTag("Puck") || grabberVelocity.magnitude < minAssistVelocity) return;
+        if (!canHit || grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity) return;
 
         // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
@@ -142,7 +142,7 @@ public class PuckHitController : MonoBehaviour
             // puckFeedbackController?.PlayHitSound();
             // puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
             // アシストが作動した場合のみ、打ち返しと半径縮小を実行
-            Debug.Log($"<color=blue>PuckHitController: Assist triggered with velocity {grabberVelocity.magnitude} collision with {other.gameObject.name}</color>");
+            Debug.Log($"<color=blue>PuckHitController: Assist triggered with velocity {grabberVelocity} collision with {other.gameObject.name}</color>");
             TriggerAssist(other);
         }
     }
@@ -163,6 +163,7 @@ public class PuckHitController : MonoBehaviour
 
         // 3. パックに速度を適用
         puckRigidbody.velocity = finalVelocity;
+        Debug.Log($"<color=green>PuckHitController: Puck velocity set to {finalVelocity}</color>");
 
         HitShrinkCount++;
         // 4. アシスト成功時に半径を縮小
