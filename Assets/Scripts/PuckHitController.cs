@@ -138,10 +138,11 @@ public class PuckHitController : MonoBehaviour
             }
 
             // ヒットフィードバックを提供
-            puckFeedbackController?.ProvideHapticFeedback();
-            puckFeedbackController?.PlayHitSound();
-            puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
+            //puckFeedbackController?.ProvideHapticFeedback();
+            // puckFeedbackController?.PlayHitSound();
+            // puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
             // アシストが作動した場合のみ、打ち返しと半径縮小を実行
+            Debug.Log($"<color=blue>PuckHitController: Assist triggered with velocity {grabberVelocity.magnitude} collision with {other.gameObject.name}</color>");
             TriggerAssist(other);
         }
     }
