@@ -39,9 +39,10 @@ public class PuckHitController : MonoBehaviour
     public Transform playerTrackingSpace;
 
     // --- 内部変数 ---
+    
     private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
-    private HandGrabInteractor grabbingInteractor = null;
+    public HandGrabInteractor grabbingInteractor { get; private set; } = null; // ロガーから参照される可能性
     public Vector3 grabberVelocity;
     private float initialRadius;
     public bool canHit = true; 
@@ -137,10 +138,11 @@ public class PuckHitController : MonoBehaviour
         // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
         {
-            if(MotionDataLogger.Instance != null)
-            {
-                MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
-            }
+            // if(MotionDataLogger.Instance != null)
+            // {
+            //     MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
+            // }
+            EpisodeLogger.Instance.LogHit(this, other, true);
 
             // ヒットフィードバックを提供
             puckFeedbackController?.ProvideHapticFeedback();
