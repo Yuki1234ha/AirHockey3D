@@ -34,6 +34,9 @@ public class PuckHitController : MonoBehaviour
     [Header("連携設定")]
     [Tooltip("フィードバックを提供するためのPuckFeedbackController")]
     public PuckFeedbackController puckFeedbackController;
+    [Header("プレイヤー設定")]
+    [Tooltip("プレイヤーの向きの基準となるTransform（OVRCameraRigのTrackingSpaceなど）")]
+    public Transform playerTrackingSpace;
 
     // --- 内部変数 ---
     private SphereCollider assistTriggerCollider;
@@ -109,16 +112,18 @@ public class PuckHitController : MonoBehaviour
     void FixedUpdate()
     {
         // 掴んでいる間だけ、正確な手のスイング速度を計算
-        if (grabbingInteractor != null)
+        if (grabbingInteractor != null && grabbingInteractor.Hand != null)
         {
-            IHand hand = grabbingInteractor.Hand;
-            if (hand != null)
-            {
-                OVRInput.Controller controller = (hand.Handedness == Handedness.Left)
-                    ? OVRInput.Controller.LTouch
-                    : OVRInput.Controller.RTouch;
-                grabberVelocity = OVRInput.GetLocalControllerVelocity(controller);
-            }
+            OVRInput.Controller controller = (grabbingInteractor.Hand.Handedness == Handedness.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
+            
+            // 1. コントローラーのローカル速度を取得
+            Vector3 localVelocity = OVRInput.GetLocalControllerVelocity(controller);
+            
+            // 2. プレイヤーの現在の向き（回転）を取得
+            Quaternion trackingSpaceRotation = playerTrackingSpace.rotation;
+            
+            // 3. ローカル速度をプレイヤーの向きに合わせて回転させ、ワールド空間での正しい速度ベクトルに変換する
+            grabberVelocity = trackingSpaceRotation * localVelocity;
         }
     }
 

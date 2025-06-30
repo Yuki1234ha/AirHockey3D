@@ -1991,6 +1991,7 @@ MonoBehaviour:
   interactableObject: {fileID: 667281157}
   ignoreCollisionDuration: 0.3
   puckFeedbackController: {fileID: 1639101364}
+  playerTrackingSpace: {fileID: 1766949279}
   grabberVelocity: {x: 0, y: 0, z: 0}
   canHit: 1
   targetToFollow: {fileID: 1676674349}
@@ -3436,7 +3437,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1676674348}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8af62558d52e47bcad48dd37e293296, type: 3}
   m_Name: 
