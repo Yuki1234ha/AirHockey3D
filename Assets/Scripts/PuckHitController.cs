@@ -158,15 +158,14 @@ public class PuckHitController : MonoBehaviour
         Rigidbody puckRigidbody = puckCollider.GetComponent<Rigidbody>();
         if (puckRigidbody == null) return;
 
-        // 1. スイング速度をXZ平面に投影
-        Vector3 swingVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
-        float swingSpeed = swingVelocityXZ.magnitude;
-
-        // 2. パックの新しい速度を、スイングの方向と速さをベースに決定します。
-        //    これにより、常にスイングした方向にパックが飛ぶようになり、直感的になります。
-        Vector3 finalVelocity = swingVelocityXZ.normalized * swingSpeed * assistImpactMultiplier;
-
-        // 3. パックに速度を適用
+        // XZ平面上での反射計算
+        Vector3 malletPosXZ = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 puckPosXZ = new Vector3(puckCollider.transform.position.x, 0, puckCollider.transform.position.z);
+        Vector3 idealNormalXZ = (malletPosXZ - puckPosXZ).normalized;
+        Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
+        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
+        float speedXZ = grabberVelocityXZ.magnitude;
+        Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
         puckRigidbody.velocity = finalVelocity;
         Debug.Log($"<color=green>PuckHitController: Puck velocity set to {finalVelocity}</color>");
 
