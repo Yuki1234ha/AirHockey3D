@@ -23,6 +23,9 @@ public class EpisodeLogger : MonoBehaviour
     public int shrinkEpisodeInterval = 3;
     [Tooltip("制御対象のPuckHitController")]
     public PuckHitController puckHitController;
+    [Header("プレイヤー設定")]
+    [Tooltip("プレイヤーの向きの基準となるTransform（OVRCameraRigのTrackingSpaceなど）")]
+    public Transform playerTrackingSpace;
 
     // --- 内部変数 ---
     private StreamWriter _episodeWriter;
@@ -53,6 +56,11 @@ public class EpisodeLogger : MonoBehaviour
         {
             Destroy(gameObject);
             return;
+        }
+        if (playerTrackingSpace == null)
+        {
+            Debug.LogError("Player Tracking Spaceが設定されていません！OVRCameraRigのTrackingSpaceなどをアタッチしてください。", this);
+            this.enabled = false;
         }
         Instance = this;
         InitializeFiles();
@@ -152,27 +160,27 @@ public class EpisodeLogger : MonoBehaviour
 
     private void WriteHitDetail(PuckHitController mallet, bool wasAssisted, float accuracy)
     {
-        // UnifiedMalletControllerから運動情報を取得
         var interactor = mallet.grabbingInteractor;
         if (interactor == null) return;
         IHand hand = interactor.Hand;
         OVRInput.Controller controller = (hand.Handedness == Handedness.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
         
-        var pos = OVRInput.GetLocalControllerPosition(controller);
-        var rot = OVRInput.GetLocalControllerRotation(controller);
-        var vel = OVRInput.GetLocalControllerVelocity(controller);
-        var angVel = OVRInput.GetLocalControllerAngularVelocity(controller);
+        // --- ★★★ ワールド座標系への変換 ★★★ ---
+        Quaternion trackingSpaceRotation = playerTrackingSpace.rotation;
+        
+        // ローカル座標・速度を取得
+        Vector3 localPos = OVRInput.GetLocalControllerPosition(controller);
+        Quaternion localRot = OVRInput.GetLocalControllerRotation(controller);
+        Vector3 localVel = OVRInput.GetLocalControllerVelocity(controller);
+        Vector3 localAngVel = OVRInput.GetLocalControllerAngularVelocity(controller);
 
-        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15}",
-            _currentEpisode.ID,
-            Time.time,
-            wasAssisted ? 1 : 0,
-            accuracy,
-            pos.x, pos.y, pos.z,
-            rot.x, rot.y, rot.z, rot.w,
-            vel.x, vel.y, vel.z,
-            angVel.x, angVel.y, angVel.z
-        );
+        // ワールド座標・回転・速度に変換
+        Vector3 worldPos = playerTrackingSpace.TransformPoint(localPos); // 位置の変換にはTransformPointを使用
+        Quaternion worldRot = trackingSpaceRotation * localRot;
+        Vector3 worldVel = trackingSpaceRotation * localVel;
+        Vector3 worldAngVel = trackingSpaceRotation * localAngVel;
+
+        string line = $"{_currentEpisode.ID},{Time.time},{(wasAssisted ? 1:0)},{accuracy},{worldPos.x},{worldPos.y},{worldPos.z},{worldRot.x},{worldRot.y},{worldRot.z},{worldRot.w},{worldVel.x},{worldVel.y},{worldVel.z},{worldAngVel.x},{worldAngVel.y},{worldAngVel.z}";
         _hitWriter.WriteLine(line);
         _hitWriter.Flush();
     }
@@ -198,7 +206,7 @@ public class EpisodeLogger : MonoBehaviour
         _hitWriter = new StreamWriter(hitFilePath, true, Encoding.UTF8);
         if (!hitFileExists)
         {
-            _hitWriter.WriteLine("EpisodeID,Timestamp,WasAssisted,Accuracy,PosX,PosY,PosZ,RotX,RotY,RotZ,RotW,VelX,VelY,VelZ,AngVelX,AngVelY,AngVelZ");
+            _hitWriter.WriteLine("EpisodeID,Timestamp,WasAssisted,Accuracy,WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW,WorldVelX,WorldVelY,WorldVelZ,WorldAngVelX,WorldAngVelY,WorldAngVelZ");
             _hitWriter.Flush();
         }
     }

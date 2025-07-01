@@ -2024,6 +2024,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   episodeSummaryFileName: episode_summary.csv
   hitDetailsFileName: hit_details.csv
+  shrinkEpisodeInterval: 3
+  puckHitController: {fileID: 1432379344}
+  playerTrackingSpace: {fileID: 1766949279}
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
