@@ -39,9 +39,10 @@ public class PuckHitController : MonoBehaviour
     public Transform playerTrackingSpace;
 
     // --- 内部変数 ---
+    
     private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
-    private HandGrabInteractor grabbingInteractor = null;
+    public HandGrabInteractor grabbingInteractor { get; private set; } = null; // ロガーから参照される可能性
     public Vector3 grabberVelocity;
     private float initialRadius;
     public bool canHit = true; 
@@ -137,15 +138,16 @@ public class PuckHitController : MonoBehaviour
         // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
         {
-            if(MotionDataLogger.Instance != null)
-            {
-                MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
-            }
+            // if(MotionDataLogger.Instance != null)
+            // {
+            //     MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
+            // }
+            EpisodeLogger.Instance.LogHit(this, other, true);
 
             // ヒットフィードバックを提供
-            //puckFeedbackController?.ProvideHapticFeedback();
-            // puckFeedbackController?.PlayHitSound();
-            // puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
+            puckFeedbackController?.ProvideHapticFeedback();
+            puckFeedbackController?.PlayHitSound();
+            puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
             // アシストが作動した場合のみ、打ち返しと半径縮小を実行
             Debug.Log($"<color=blue>PuckHitController: Assist triggered with velocity {grabberVelocity} collision with {other.gameObject.name}</color>");
             TriggerAssist(other);
@@ -158,24 +160,23 @@ public class PuckHitController : MonoBehaviour
         Rigidbody puckRigidbody = puckCollider.GetComponent<Rigidbody>();
         if (puckRigidbody == null) return;
 
-        // 1. スイング速度をXZ平面に投影
-        Vector3 swingVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
-        float swingSpeed = swingVelocityXZ.magnitude;
-
-        // 2. パックの新しい速度を、スイングの方向と速さをベースに決定します。
-        //    これにより、常にスイングした方向にパックが飛ぶようになり、直感的になります。
-        Vector3 finalVelocity = swingVelocityXZ.normalized * swingSpeed * assistImpactMultiplier;
-
-        // 3. パックに速度を適用
+        // XZ平面上での反射計算
+        Vector3 malletPosXZ = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 puckPosXZ = new Vector3(puckCollider.transform.position.x, 0, puckCollider.transform.position.z);
+        Vector3 idealNormalXZ = (malletPosXZ - puckPosXZ).normalized;
+        Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
+        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
+        float speedXZ = grabberVelocityXZ.magnitude;
+        Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
         puckRigidbody.velocity = finalVelocity;
         Debug.Log($"<color=green>PuckHitController: Puck velocity set to {finalVelocity}</color>");
 
         HitShrinkCount++;
         // 4. アシスト成功時に半径を縮小
-        if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
-        {
-            ShrinkAssistRadius();
-        }
+        // if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
+        // {
+        //     ShrinkAssistRadius();
+        // }
         // 5. パックの衝突を一時的に無視する
         DisableAllCollisionsForDuration(ignoreCollisionDuration);
         if(planarFollower != null)
@@ -186,7 +187,7 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    void ShrinkAssistRadius()
+    public void ShrinkAssistRadius()
     {
         float newRadius = assistTriggerCollider.radius - radiusShrinkAmount;
         // 半径が最小値より小さくならないように制限

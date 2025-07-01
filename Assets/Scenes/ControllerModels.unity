@@ -1902,6 +1902,7 @@ GameObject:
   - component: {fileID: 1432379340}
   - component: {fileID: 1432379344}
   - component: {fileID: 1432379345}
+  - component: {fileID: 1432379346}
   m_Layer: 5
   m_Name: HitArea
   m_TagString: Untagged
@@ -2003,12 +2004,32 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1432379338}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7d8e113ee39b464a9b0528971d88775, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   fileName: motion_data_with_results.csv
+--- !u!114 &1432379346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432379338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee307669f4244039b203db6d41d1659, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  episodeSummaryFileName: episode_summary.csv
+  hitDetailsFileName: hit_details.csv
+  shrinkEpisodeInterval: 3
+  puckHitController: {fileID: 1432379344}
+  playerTrackingSpace: {fileID: 1766949279}
+  opponentGoal: {fileID: 1341908522}
+  wallXLeft: -2.55
+  wallXRight: 2.55
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2920,7 +2941,7 @@ MonoBehaviour:
   maxStallTime: 3
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 25
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55

@@ -25,12 +25,10 @@ public class Goal : MonoBehaviour
     {
         if (other.CompareTag("Puck"))
         {
-            // ★★★ ロガーにゴール結果を通知 ★★★
-            if (MotionDataLogger.Instance != null)
+            // ロガーにゴール結果（エピソード終了）を通知
+            if (EpisodeLogger.Instance != null)
             {
-                int puckInstanceID = other.gameObject.GetInstanceID();
-                // このゴールが最終結果であることを通知
-                MotionDataLogger.Instance.FinalizeInProgressShot(puckInstanceID, typeOfGoal.ToString());
+                EpisodeLogger.Instance.EndEpisode(typeOfGoal.ToString());
             }
             
             // パックのリセットと打ち出し処理を開始
@@ -46,12 +44,10 @@ public class Goal : MonoBehaviour
     {
         if (puckRigidbody == null) yield break;
         
-        // ★★★ パックを動かす直前に、追跡中のショットがあれば「NoGoal」として確定させる ★★★
-        // ゴールに入らずにリセットされるケース（StallResetterなど）を想定
-        if (MotionDataLogger.Instance != null)
+         // ★★★ ロガーにエピソード開始を通知 ★★★
+        if(EpisodeLogger.Instance != null)
         {
-            // このリセットがゴールによるものではない場合、前のショットはNoGoalだったことになる
-            MotionDataLogger.Instance.FinalizeInProgressShot(puckRigidbody.gameObject.GetInstanceID(), "NoGoal_Reset");
+            EpisodeLogger.Instance.StartNewEpisode();
         }
         
         puckRigidbody.velocity = Vector3.zero;
