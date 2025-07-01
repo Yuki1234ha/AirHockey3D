@@ -2027,6 +2027,9 @@ MonoBehaviour:
   shrinkEpisodeInterval: 3
   puckHitController: {fileID: 1432379344}
   playerTrackingSpace: {fileID: 1766949279}
+  opponentGoal: {fileID: 1341908522}
+  wallXLeft: -2.595
+  wallXRight: 2.595
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0

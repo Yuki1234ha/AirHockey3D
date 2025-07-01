@@ -26,6 +26,13 @@ public class EpisodeLogger : MonoBehaviour
     [Header("プレイヤー設定")]
     [Tooltip("プレイヤーの向きの基準となるTransform（OVRCameraRigのTrackingSpaceなど）")]
     public Transform playerTrackingSpace;
+    [Header("フィールド設定")]
+    [Tooltip("相手のゴールのTransform")]
+    public Transform opponentGoal;
+    [Tooltip("左の壁のX座標（パックの半径を考慮した値）")]
+    public float wallXLeft = -2.595f;
+    [Tooltip("右の壁のX座標（パックの半径を考慮した値）")]
+    public float wallXRight = 2.595f;
 
     // --- 内部変数 ---
     private StreamWriter _episodeWriter;
@@ -108,18 +115,10 @@ public class EpisodeLogger : MonoBehaviour
             _currentEpisode.HitCount_NonAssisted++;
         }
         
-        // --- ショットの正確さを計算 ---
-        Vector3 puckVelocity = puckCollider.attachedRigidbody.velocity;
-        Transform opponentGoal = FindObjectOfType<Goal>().opponentGoal; // 簡易的な取得方法
-        Vector3 idealDirection = (opponentGoal.position - puckCollider.transform.position).normalized;
+        float advancedAccuracy = CalculateAdvancedAccuracy(puckCollider.transform.position, puckCollider.attachedRigidbody.velocity);
+        _currentEpisode.ShotAccuracyScores.Add(advancedAccuracy);
         
-        // ベクトルのなす角から正確さをスコア化 (1:完璧, 0:逆方向)
-        float accuracy = Vector3.Dot(puckVelocity.normalized, idealDirection.normalized);
-        accuracy = (accuracy + 1) / 2; // -1~1の範囲を0~1に変換
-        _currentEpisode.ShotAccuracyScores.Add(accuracy);
-        
-        // --- ヒット詳細データを書き込み ---
-        WriteHitDetail(mallet, wasAssisted, accuracy);
+        WriteHitDetail(mallet, wasAssisted, advancedAccuracy);
     }
 
     /// <summary>
@@ -136,8 +135,8 @@ public class EpisodeLogger : MonoBehaviour
         // エピソードスコアを計算（例）
         // ゴール成功で+1000点、ヒット数が少ないほど高得点、正確性が高いほど高得点
         float score = (result == "OpponentGoal" ? 1000 : 0) 
-                    - (_currentEpisode.HitCount_Assisted* 10 + _currentEpisode.HitCount_NonAssisted) 
-                      + avgAccuracy * 100;
+                    - (_currentEpisode.HitCount_Assisted* 10) 
+                      + avgAccuracy * 100 - duration * 5;
 
         // エピソード集計データを書き込み
         string line = string.Format("{0},{1},{2},{3},{4},{5},{6}",
@@ -158,16 +157,49 @@ public class EpisodeLogger : MonoBehaviour
         _currentEpisode = null;
     }
 
+    /// <summary>
+    /// ショットの正確さを、複数の理想軌道との類似度で評価する
+    /// </summary>
+    private float CalculateAdvancedAccuracy(Vector3 puckPosition, Vector3 puckVelocity)
+    {
+        Vector3 actualDirection = puckVelocity.normalized;
+        actualDirection.y = 0; // XZ平面で評価
+
+        // --- 3つの理想軌道を計算 ---
+        // 1. 直接ゴールを狙う軌道
+        Vector3 directDirection = (opponentGoal.position - puckPosition).normalized;
+        directDirection.y = 0;
+
+        // 2. 右壁に反射させてゴールを狙う軌道
+        Vector3 virtualGoalRight = new Vector3(wallXRight + (wallXRight - opponentGoal.position.x), 0, opponentGoal.position.z);
+        Vector3 bankRightDirection = (virtualGoalRight - puckPosition).normalized;
+
+        // 3. 左壁に反射させてゴールを狙う軌道
+        Vector3 virtualGoalLeft = new Vector3(wallXLeft + (wallXLeft - opponentGoal.position.x), 0, opponentGoal.position.z);
+        Vector3 bankLeftDirection = (virtualGoalLeft - puckPosition).normalized;
+
+        // --- 実際のショット方向と、3つの理想軌道の類似度（内積）を計算 ---
+        float dotDirect = Vector3.Dot(actualDirection, directDirection.normalized);
+        float dotBankRight = Vector3.Dot(actualDirection, bankRightDirection.normalized);
+        float dotBankLeft = Vector3.Dot(actualDirection, bankLeftDirection.normalized);
+
+        // 最も類似度が高いものを、このショットの評価とする
+        float maxSimilarity = Mathf.Max(dotDirect, dotBankRight, dotBankLeft);
+
+        // 類似度を0～1のスコアに変換して返す
+        return (maxSimilarity + 1f) / 2f;
+    }
+
     private void WriteHitDetail(PuckHitController mallet, bool wasAssisted, float accuracy)
     {
         var interactor = mallet.grabbingInteractor;
         if (interactor == null) return;
         IHand hand = interactor.Hand;
         OVRInput.Controller controller = (hand.Handedness == Handedness.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-        
+
         // --- ★★★ ワールド座標系への変換 ★★★ ---
         Quaternion trackingSpaceRotation = playerTrackingSpace.rotation;
-        
+
         // ローカル座標・速度を取得
         Vector3 localPos = OVRInput.GetLocalControllerPosition(controller);
         Quaternion localRot = OVRInput.GetLocalControllerRotation(controller);
@@ -180,7 +212,7 @@ public class EpisodeLogger : MonoBehaviour
         Vector3 worldVel = trackingSpaceRotation * localVel;
         Vector3 worldAngVel = trackingSpaceRotation * localAngVel;
 
-        string line = $"{_currentEpisode.ID},{Time.time},{(wasAssisted ? 1:0)},{accuracy},{worldPos.x},{worldPos.y},{worldPos.z},{worldRot.x},{worldRot.y},{worldRot.z},{worldRot.w},{worldVel.x},{worldVel.y},{worldVel.z},{worldAngVel.x},{worldAngVel.y},{worldAngVel.z}";
+        string line = $"{_currentEpisode.ID},{Time.time},{(wasAssisted ? 1 : 0)},{accuracy},{worldPos.x},{worldPos.y},{worldPos.z},{worldRot.x},{worldRot.y},{worldRot.z},{worldRot.w},{worldVel.x},{worldVel.y},{worldVel.z},{worldAngVel.x},{worldAngVel.y},{worldAngVel.z}";
         _hitWriter.WriteLine(line);
         _hitWriter.Flush();
     }
