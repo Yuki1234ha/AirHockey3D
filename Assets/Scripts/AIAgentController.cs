@@ -147,7 +147,7 @@ public class AIAgentController : Agent
         // puckの位置を表示するためのデバッグ用ログ
         if (logEnabled)
         {
-            Debug.Log($"<color=blue>[{gameObject.name}] Puck Position: {puckRigidbody.transform.position.x * dir}, {puckRigidbody.transform.position.z * dir}</color>");
+            //Debug.Log($"<color=blue>[{gameObject.name}] Puck Position: {puckRigidbody.transform.position.x * dir}, {puckRigidbody.transform.position.z * dir}</color>");
             // puckの半径を世界座標系で表示
             // Colliderのワールド座標でのバウンディングボックスを取得
             Collider puckCollider = puckRigidbody.GetComponent<Collider>();
@@ -173,9 +173,9 @@ public class AIAgentController : Agent
                 Debug.LogWarning("SphereCollider以外のColliderタイプです。半径の解釈にご注意ください。");
             }
 
-            Debug.Log($"PuckのColliderのBounds (ワールド座標): {colliderBounds}");
-            Debug.Log($"PuckのColliderのExtents (ワールド座標での半分のサイズ): {extents}");
-            Debug.Log($"Puckのワールド座標での推定半径: {worldRadius}");
+            // Debug.Log($"PuckのColliderのBounds (ワールド座標): {colliderBounds}");
+            // Debug.Log($"PuckのColliderのExtents (ワールド座標での半分のサイズ): {extents}");
+            // Debug.Log($"Puckのワールド座標での推定半径: {worldRadius}");
         }
     }
 

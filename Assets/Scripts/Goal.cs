@@ -59,18 +59,18 @@ public class Goal : MonoBehaviour
         puckRigidbody.transform.position = spawnPosition;
         puckRigidbody.transform.rotation = Quaternion.identity;
         
-        yield return new WaitForSeconds(launchDelay);
+        // yield return new WaitForSeconds(launchDelay);
 
-        bool useRightWall = (Random.value > 0.5f);
-        float wallX = useRightWall ? wallXRight : wallXLeft;
+        // bool useRightWall = (Random.value > 0.5f);
+        // float wallX = useRightWall ? wallXRight : wallXLeft;
 
-        Vector3 opponentGoalPos = opponentGoal.position;
-        Vector3 virtualGoalPos = new Vector3(wallX + (wallX - opponentGoalPos.x), opponentGoalPos.y, opponentGoalPos.z);
-        virtualGoalPos.y = 0;
+        // Vector3 opponentGoalPos = opponentGoal.position;
+        // Vector3 virtualGoalPos = new Vector3(wallX + (wallX - opponentGoalPos.x), opponentGoalPos.y, opponentGoalPos.z);
+        // virtualGoalPos.y = 0;
 
-        Vector3 launchDirection = (virtualGoalPos - spawnPosition).normalized;
-        launchDirection.y = 0;
+        // Vector3 launchDirection = (virtualGoalPos - spawnPosition).normalized;
+        // launchDirection.y = 0;
 
-        puckRigidbody.velocity = launchDirection.normalized * launchForce;
+        // puckRigidbody.velocity = launchDirection.normalized * launchForce;
     }
 }
