@@ -1944,7 +1944,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.2
+  m_Radius: 1.6
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1432379343
 Rigidbody:
@@ -1987,7 +1987,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minAssistVelocity: 1
   assistImpactMultiplier: 15
-  radiusShrinkAmount: 0.05
+  radiusShrinkAmount: 0.3
   minRadius: 0.4
   interactableObject: {fileID: 667281157}
   ignoreCollisionDuration: 0.3
@@ -2024,7 +2024,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   episodeSummaryFileName: episode_summary.csv
   hitDetailsFileName: hit_details.csv
-  shrinkEpisodeInterval: 3
+  totalEpisodes: 40
+  initialRadius: 1.6
+  shrinkAmount: 0.6
+  shrinkInterval: 10
+  resetEpisode: 30
   puckHitController: {fileID: 1432379344}
   playerTrackingSpace: {fileID: 1766949279}
   opponentGoal: {fileID: 1341908522}

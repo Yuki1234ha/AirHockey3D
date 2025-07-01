@@ -19,8 +19,16 @@ public class EpisodeLogger : MonoBehaviour
     [Tooltip("各ヒットの詳細データを保存するファイル名")]
     public string hitDetailsFileName = "hit_details.csv";
     [Header("難易度連携設定")]
+    [Tooltip("実験の総エピソード数")]
+    public int totalEpisodes = 24;
+    [Tooltip("半径の初期値")]
+    public float initialRadius = 1.6f;
+    [Tooltip("半径を縮小させる量")]
+    public float shrinkAmount = 0.3f;
     [Tooltip("半径を縮小させる間隔（エピソード数）")]
-    public int shrinkEpisodeInterval = 3;
+    public int shrinkInterval = 6;
+    [Tooltip("半径を初期値に戻すエピソード番号")]
+    public int resetEpisode = 19;
     [Tooltip("制御対象のPuckHitController")]
     public PuckHitController puckHitController;
     [Header("プレイヤー設定")]
@@ -89,10 +97,23 @@ public class EpisodeLogger : MonoBehaviour
         _isEpisodeActive = true;
 
          // ★★★ 一定エピソードごとに半径を縮小させる ★★★
-        if (puckHitController != null && _episodeID > 0 && _episodeID % shrinkEpisodeInterval == 0)
+        if (puckHitController != null)
         {
-            puckHitController.ShrinkAssistRadius();
-            Debug.Log($"<color=magenta>Episode {_episodeID}: Shrinking hit radius.</color>");
+            float targetRadius;
+            // 最後のエピソード群（例: 19～24）では初期半径に戻す
+            if (_episodeID >= resetEpisode)
+            {
+                targetRadius = initialRadius;
+            }
+            else // それ以前のエピソードでは段階的に縮小
+            {
+                // 何回縮小したかを計算 (例: Ep 1-5 -> 0回, Ep 6-11 -> 1回, Ep 12-17 -> 2回)
+                int shrinkCount = (_episodeID - 1) / shrinkInterval;
+                targetRadius = initialRadius - (shrinkCount * shrinkAmount);
+            }
+            
+            // MalletControllerに半径を設定させる
+            puckHitController.SetRadius(targetRadius);
         }
         Debug.Log($"<color=yellow>--- Episode {_episodeID} Started ---</color>");
     }
