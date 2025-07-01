@@ -2028,8 +2028,8 @@ MonoBehaviour:
   puckHitController: {fileID: 1432379344}
   playerTrackingSpace: {fileID: 1766949279}
   opponentGoal: {fileID: 1341908522}
-  wallXLeft: -2.595
-  wallXRight: 2.595
+  wallXLeft: -2.55
+  wallXRight: 2.55
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2941,7 +2941,7 @@ MonoBehaviour:
   maxStallTime: 3
   puckResetPoint: {fileID: 1830106153}
   opponentGoal: {fileID: 1697352756}
-  launchForce: 30
+  launchForce: 25
   launchDelay: 1
   spawnRadius: 1
   wallXLeft: -2.55
