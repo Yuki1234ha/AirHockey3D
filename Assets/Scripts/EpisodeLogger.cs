@@ -33,12 +33,16 @@ public class EpisodeLogger : MonoBehaviour
     public float wallXLeft = -2.595f;
     [Tooltip("右の壁のX座標（パックの半径を考慮した値）")]
     public float wallXRight = 2.595f;
+    //ログを取るかどうかのフラグ
+    [Tooltip("ログを取る場合はtrue、取らない場合はfalse")]
+    public bool enableLogging = true;
 
     // --- 内部変数 ---
     private StreamWriter _episodeWriter;
     private StreamWriter _hitWriter;
     private int _episodeID = 0;
     private bool _isEpisodeActive = false;
+
 
     // 現在のエピソード情報を保持するクラス
     private class EpisodeData
@@ -57,20 +61,22 @@ public class EpisodeLogger : MonoBehaviour
     }
     private EpisodeData _currentEpisode;
 
-    void Awake()
+    void Start()
     {
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        if (playerTrackingSpace == null)
-        {
-            Debug.LogError("Player Tracking Spaceが設定されていません！OVRCameraRigのTrackingSpaceなどをアタッチしてください。", this);
-            this.enabled = false;
-        }
         Instance = this;
-        InitializeFiles();
+        if (enableLogging)
+        {
+            InitializeFiles();
+        }
+        else
+        {
+            Debug.LogWarning("Logging is disabled. No data will be recorded.");
+        }
     }
 
     /// <summary>
@@ -103,7 +109,7 @@ public class EpisodeLogger : MonoBehaviour
     [System.Obsolete]
     public void LogHit(PuckHitController mallet, Collider puckCollider, bool wasAssisted)
     {
-        if (!_isEpisodeActive || _currentEpisode == null) return;
+        if (!_isEpisodeActive || _currentEpisode == null || !enableLogging) return;
 
         // ヒット回数をカウント
         if (wasAssisted)
@@ -126,7 +132,7 @@ public class EpisodeLogger : MonoBehaviour
     /// </summary>
     public void EndEpisode(string result)
     {
-        if (!_isEpisodeActive || _currentEpisode == null) return;
+        if (!_isEpisodeActive || _currentEpisode == null || !enableLogging) return;
 
         float duration = Time.time - _currentEpisode.StartTime;
         float avgAccuracy = _currentEpisode.ShotAccuracyScores.Count > 0 ? 
