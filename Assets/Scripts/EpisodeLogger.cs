@@ -19,8 +19,16 @@ public class EpisodeLogger : MonoBehaviour
     [Tooltip("各ヒットの詳細データを保存するファイル名")]
     public string hitDetailsFileName = "hit_details.csv";
     [Header("難易度連携設定")]
+    [Tooltip("実験の総エピソード数")]
+    public int totalEpisodes = 40;
+    [Tooltip("半径の初期値")]
+    public float initialRadius = 1.6f;
+    [Tooltip("半径を縮小させる量")]
+    public float shrinkAmount = 0.3f;
     [Tooltip("半径を縮小させる間隔（エピソード数）")]
-    public int shrinkEpisodeInterval = 3;
+    public int shrinkInterval = 6;
+    [Tooltip("半径を初期値に戻すエピソード番号")]
+    public int resetEpisode = 19;
     [Tooltip("制御対象のPuckHitController")]
     public PuckHitController puckHitController;
     [Header("プレイヤー設定")]

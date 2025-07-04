@@ -196,11 +196,20 @@ public class PuckHitController : MonoBehaviour
         assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
         Debug.Log($"<color=orange>Assist Radius shrunk to: {assistTriggerCollider.radius}</color>");
     }
+    
+    /// <summary>
+    /// EpisodeLoggerから呼び出され、アシスト半径を設定する
+    /// </summary>
+    public void SetRadius(float newRadius)
+    {
+        assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
+        Debug.Log($"<color=orange>Assist Radius set to: {assistTriggerCollider.radius}</color>");
+    }
 
     private IEnumerator DisableAllCollisionsForDuration(float duration)
     {
         canHit = false; // 次のヒット判定を無効化
-        
+
         // 親オブジェクト（targetToFollow）とその全ての子のコライダーを取得
         Collider[] allPaddleColliders = targetToFollow.GetComponentsInChildren<Collider>();
 
@@ -222,7 +231,7 @@ public class PuckHitController : MonoBehaviour
                 col.enabled = true;
             }
         }
-        
+
         canHit = true; // ヒット判定を再度有効化
         Debug.Log("<color=lime>All paddle colliders re-enabled.</color>");
     }
