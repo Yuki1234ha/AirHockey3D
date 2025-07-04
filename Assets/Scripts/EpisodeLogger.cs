@@ -51,6 +51,7 @@ public class EpisodeLogger : MonoBehaviour
         public float StartTime;
         public int HitCount_Assisted = 0;
         public int HitCount_NonAssisted = 0;
+        public float StartRadius; 
         public List<float> ShotAccuracyScores = new List<float>(); // ショットの正確さ（0-1）を保持
 
         public EpisodeData(int id)
@@ -94,11 +95,25 @@ public class EpisodeLogger : MonoBehaviour
         _currentEpisode = new EpisodeData(_episodeID);
         _isEpisodeActive = true;
 
-         // ★★★ 一定エピソードごとに半径を縮小させる ★★★
-        if (puckHitController != null && _episodeID > 0 && _episodeID % shrinkEpisodeInterval == 0)
+        // ★★★ 一定エピソードごとに半径を縮小させる ★★★
+        if (puckHitController != null)
         {
-            puckHitController.ShrinkAssistRadius();
-            Debug.Log($"<color=magenta>Episode {_episodeID}: Shrinking hit radius.</color>");
+            float targetRadius;
+            // 最後のエピソード群（例: 19～24）では初期半径に戻す
+            if (_episodeID >= resetEpisode)
+            {
+                targetRadius = initialRadius;
+            }
+            else // それ以前のエピソードでは段階的に縮小
+            {
+                // 何回縮小したかを計算 (例: Ep 1-5 -> 0回, Ep 6-11 -> 1回, Ep 12-17 -> 2回)
+                int shrinkCount = (_episodeID - 1) / shrinkInterval;
+                targetRadius = initialRadius - (shrinkCount * shrinkAmount);
+            }
+
+            // MalletControllerに半径を設定させる
+            puckHitController.SetRadius(targetRadius);
+            _currentEpisode.StartRadius = targetRadius;
         }
         Debug.Log($"<color=yellow>--- Episode {_episodeID} Started ---</color>");
     }
@@ -124,7 +139,8 @@ public class EpisodeLogger : MonoBehaviour
         float advancedAccuracy = CalculateAdvancedAccuracy(puckCollider.transform.position, puckCollider.attachedRigidbody.velocity);
         _currentEpisode.ShotAccuracyScores.Add(advancedAccuracy);
         
-        WriteHitDetail(mallet, wasAssisted, advancedAccuracy);
+        float radiusAtHit = mallet.CurrentRadius; 
+        WriteHitDetail(mallet, wasAssisted, advancedAccuracy, radiusAtHit);
     }
 
     /// <summary>
@@ -145,9 +161,10 @@ public class EpisodeLogger : MonoBehaviour
                       + avgAccuracy * 100 - duration * 5;
 
         // エピソード集計データを書き込み
-        string line = string.Format("{0},{1},{2},{3},{4},{5},{6}",
+        string line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
             _currentEpisode.ID,
             result,
+            _currentEpisode.StartRadius,
             duration,
             _currentEpisode.HitCount_Assisted,
             _currentEpisode.HitCount_NonAssisted,
@@ -196,7 +213,7 @@ public class EpisodeLogger : MonoBehaviour
         return (maxSimilarity + 1f) / 2f;
     }
 
-    private void WriteHitDetail(PuckHitController mallet, bool wasAssisted, float accuracy)
+    private void WriteHitDetail(PuckHitController mallet, bool wasAssisted, float accuracy, float radiusAtHit)
     {
         var interactor = mallet.grabbingInteractor;
         if (interactor == null) return;
@@ -218,7 +235,7 @@ public class EpisodeLogger : MonoBehaviour
         Vector3 worldVel = trackingSpaceRotation * localVel;
         Vector3 worldAngVel = trackingSpaceRotation * localAngVel;
 
-        string line = $"{_currentEpisode.ID},{Time.time},{(wasAssisted ? 1 : 0)},{accuracy},{worldPos.x},{worldPos.y},{worldPos.z},{worldRot.x},{worldRot.y},{worldRot.z},{worldRot.w},{worldVel.x},{worldVel.y},{worldVel.z},{worldAngVel.x},{worldAngVel.y},{worldAngVel.z}";
+        string line = $"{_currentEpisode.ID},{Time.time},{(wasAssisted ? 1 : 0)},{accuracy},{radiusAtHit},{worldPos.x},{worldPos.y},{worldPos.z},{worldRot.x},{worldRot.y},{worldRot.z},{worldRot.w},{worldVel.x},{worldVel.y},{worldVel.z},{worldAngVel.x},{worldAngVel.y},{worldAngVel.z}";
         _hitWriter.WriteLine(line);
         _hitWriter.Flush();
     }
@@ -234,7 +251,7 @@ public class EpisodeLogger : MonoBehaviour
         _episodeWriter = new StreamWriter(episodeFilePath, true, Encoding.UTF8);
         if (!episodeFileExists)
         {
-            _episodeWriter.WriteLine("EpisodeID,Result,Duration,AssistedHits,NonAssistedHits,AvgAccuracy,Score");
+            _episodeWriter.WriteLine("EpisodeID,Result,StartRadius,Duration,AssistedHits,NonAssistedHits,AvgAccuracy,Score");
             _episodeWriter.Flush();
         }
         
@@ -244,7 +261,7 @@ public class EpisodeLogger : MonoBehaviour
         _hitWriter = new StreamWriter(hitFilePath, true, Encoding.UTF8);
         if (!hitFileExists)
         {
-            _hitWriter.WriteLine("EpisodeID,Timestamp,WasAssisted,Accuracy,WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW,WorldVelX,WorldVelY,WorldVelZ,WorldAngVelX,WorldAngVelY,WorldAngVelZ");
+            _hitWriter.WriteLine("EpisodeID,Timestamp,WasAssisted,Accuracy,RadiusAtHit,WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW,WorldVelX,WorldVelY,WorldVelZ,WorldAngVelX,WorldAngVelY,WorldAngVelZ");
             _hitWriter.Flush();
         }
     }

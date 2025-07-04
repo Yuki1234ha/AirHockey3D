@@ -54,6 +54,8 @@ public class PuckHitController : MonoBehaviour
     [Tooltip("物理マレットについているPlanarFollowerスクリプト")]
     public PlanarFollower planarFollower;
     private int HitShrinkCount = 0;
+    public float CurrentRadius => assistTriggerCollider != null ? assistTriggerCollider.radius : 0f;
+
 
     void Awake()
     {
