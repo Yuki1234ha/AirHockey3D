@@ -2010,12 +2010,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   episodeSummaryFileName: episode_summary.csv
   hitDetailsFileName: hit_details.csv
-  shrinkEpisodeInterval: 3
+  totalEpisodes: 40
+  initialRadius: 1.6
+  shrinkAmount: 0.6
+  shrinkInterval: 10
+  resetEpisode: 30
   puckHitController: {fileID: 1432379344}
   playerTrackingSpace: {fileID: 1766949279}
   opponentGoal: {fileID: 1341908522}
   wallXLeft: -2.55
   wallXRight: 2.55
+  enableLogging: 0
 --- !u!1 &1470509161
 GameObject:
   m_ObjectHideFlags: 0
