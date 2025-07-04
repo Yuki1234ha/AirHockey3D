@@ -7,7 +7,6 @@ using System.Collections;
 using Oculus.Interaction;
 using Oculus.Interaction.HandGrab;
 using Oculus.Interaction.Input;
-
 // このスクリプトはSphereColliderが必須です
 [RequireComponent(typeof(SphereCollider))]
 public class PuckHitController : MonoBehaviour
@@ -37,9 +36,11 @@ public class PuckHitController : MonoBehaviour
     [Header("プレイヤー設定")]
     [Tooltip("プレイヤーの向きの基準となるTransform（OVRCameraRigのTrackingSpaceなど）")]
     public Transform playerTrackingSpace;
+    [Tooltip("追従するための親Rigidbody")]
+    public Rigidbody targetRigidbody; // 追従する親オブジェクトのRigidbody
 
     // --- 内部変数 ---
-    
+
     private SphereCollider assistTriggerCollider;
     private IInteractableView interactable;
     public HandGrabInteractor grabbingInteractor { get; private set; } = null; // ロガーから参照される可能性
@@ -54,6 +55,8 @@ public class PuckHitController : MonoBehaviour
     [Tooltip("物理マレットについているPlanarFollowerスクリプト")]
     public PlanarFollower planarFollower;
     private int HitShrinkCount = 0;
+    //　リセット先の初期Transform
+    private Vector3 initialPosition;
     public float CurrentRadius => assistTriggerCollider != null ? assistTriggerCollider.radius : 0f;
 
 
@@ -63,6 +66,8 @@ public class PuckHitController : MonoBehaviour
         assistTriggerCollider = GetComponent<SphereCollider>();
         initialRadius = assistTriggerCollider.radius;
         canHit = true; // 初期状態ではヒット可能
+        // 初期位置を保存
+        initialPosition = transform.position;
 
         // 親からHandGrabInteractableコンポーネントを探す
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
@@ -102,13 +107,19 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    // 離した手をリセット
+    // 離した手をリセットし元の位置に戻す
     private void HandleInteractorViewRemoved(IInteractorView interactorView)
     {
         if ((Object)interactorView == grabbingInteractor)
         {
             grabbingInteractor = null;
             grabberVelocity = Vector3.zero;
+            // 座標を元の位置に戻す
+            if (initialPosition != null)
+            {
+                targetRigidbody.position = initialPosition;
+                Debug.Log($"<color=green>PuckHitController Released. Position reset to {initialPosition}.</color>");
+            }
         }
     }
 
