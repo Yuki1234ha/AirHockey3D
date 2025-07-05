@@ -1,14 +1,14 @@
 // PuckHitController.cs
 // パックを打ち返す機能に特化したスクリプト。
-// ヒットアシストが成功するたびに、当たり判定の半径が小さくなる。
+// ★★★ ヒットストップ機能を追加 ★★★
 
 using UnityEngine;
 using System.Collections;
 using Oculus.Interaction;
 using Oculus.Interaction.HandGrab;
 using Oculus.Interaction.Input;
-// このスクリプトはSphereColliderが必須です
-[RequireComponent(typeof(SphereCollider))]
+
+[RequireComponent(typeof(CapsuleCollider))]
 public class PuckHitController : MonoBehaviour
 {
     [Header("アシスト設定")]
@@ -16,12 +16,23 @@ public class PuckHitController : MonoBehaviour
     public float minAssistVelocity = 1.0f;
     [Tooltip("アシストヒット時の打撃力を調整する係数")]
     public float assistImpactMultiplier = 1.5f;
+    [Tooltip("アシスト判定の最大の長さ（高さ）")]
+    public float maxAssistHeight = 1.2f;
 
     [Header("半径縮小設定")]
     [Tooltip("アシスト成功時に縮小する半径の量")]
     public float radiusShrinkAmount = 0.05f;
     [Tooltip("アシスト半径の最小値")]
     public float minRadius = 0.34f;
+
+    [Header("ヒットストップ設定")]
+    [Tooltip("ヒットストップの最大時間（秒）")]
+    public float maxHitStopDuration = 0.1f;
+    [Tooltip("ヒットストップの最小時間（秒）")]
+    public float minHitStopDuration = 0.0f;
+    [Tooltip("ヒットストップ中の時間の進み方（0で完全停止）")]
+    [Range(0f, 1f)]
+    public float hitStopTimescale = 0.1f;
 
     [Header("Interaction SDK 設定")]
     [Tooltip("親オブジェクトにアタッチされているHandGrabInteractable")]
@@ -36,40 +47,41 @@ public class PuckHitController : MonoBehaviour
     [Header("プレイヤー設定")]
     [Tooltip("プレイヤーの向きの基準となるTransform（OVRCameraRigのTrackingSpaceなど）")]
     public Transform playerTrackingSpace;
-    [Tooltip("追従するための親Rigidbody")]
-    public Rigidbody targetRigidbody; // 追従する親オブジェクトのRigidbody
 
     // --- 内部変数 ---
-
-    private SphereCollider assistTriggerCollider;
+    private CapsuleCollider assistTriggerCollider;
     private IInteractableView interactable;
-    public HandGrabInteractor grabbingInteractor { get; private set; } = null; // ロガーから参照される可能性
+    public HandGrabInteractor grabbingInteractor { get; private set; } = null;
     public Vector3 grabberVelocity;
     private float initialRadius;
+    private float initialHeight;
     public bool canHit = true; 
 
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
+    [Tooltip("位置をリセットする対象のRigidbody")]
+    public Rigidbody targetRigidbody;
+
     [Header("追従制御")]
     [Tooltip("物理マレットについているPlanarFollowerスクリプト")]
     public PlanarFollower planarFollower;
     private int HitShrinkCount = 0;
-    //　リセット先の初期Transform
     private Vector3 initialPosition;
     public float CurrentRadius => assistTriggerCollider != null ? assistTriggerCollider.radius : 0f;
 
-
     void Awake()
     {
-        // 自身のSphereColliderを取得し、初期半径を保存
-        assistTriggerCollider = GetComponent<SphereCollider>();
+        assistTriggerCollider = GetComponent<CapsuleCollider>();
         initialRadius = assistTriggerCollider.radius;
-        canHit = true; // 初期状態ではヒット可能
-        // 初期位置を保存
-        initialPosition = transform.position;
+        initialHeight = assistTriggerCollider.height;
+        canHit = true;
 
-        // 親からHandGrabInteractableコンポーネントを探す
+        if (targetRigidbody != null)
+        {
+            initialPosition = targetRigidbody.position;
+        }
+
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
         if (interactable == null)
         {
@@ -96,7 +108,6 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    // 掴んだ時に半径をリセット
     private void HandleInteractorViewAdded(IInteractorView interactorView)
     {
         grabbingInteractor = interactorView as HandGrabInteractor;
@@ -107,64 +118,105 @@ public class PuckHitController : MonoBehaviour
         }
     }
 
-    // 離した手をリセットし元の位置に戻す
     private void HandleInteractorViewRemoved(IInteractorView interactorView)
     {
         if ((Object)interactorView == grabbingInteractor)
         {
             grabbingInteractor = null;
             grabberVelocity = Vector3.zero;
-            // 座標を元の位置に戻す
-            if (initialPosition != null)
+            ResetAssistCollider();
+
+            if (targetRigidbody != null)
             {
                 targetRigidbody.position = initialPosition;
-                Debug.Log($"<color=green>PuckHitController Released. Position reset to {initialPosition}.</color>");
+                targetRigidbody.linearVelocity = Vector3.zero;
+                targetRigidbody.angularVelocity = Vector3.zero;
+                Debug.Log($"<color=cyan>Mallet position reset to {initialPosition}.</color>");
             }
         }
     }
 
     void FixedUpdate()
     {
-        // 掴んでいる間だけ、正確な手のスイング速度を計算
         if (grabbingInteractor != null && grabbingInteractor.Hand != null)
         {
             OVRInput.Controller controller = (grabbingInteractor.Hand.Handedness == Handedness.Left) ? OVRInput.Controller.LTouch : OVRInput.Controller.RTouch;
-            
-            // 1. コントローラーのローカル速度を取得
             Vector3 localVelocity = OVRInput.GetLocalControllerVelocity(controller);
-            
-            // 2. プレイヤーの現在の向き（回転）を取得
             Quaternion trackingSpaceRotation = playerTrackingSpace.rotation;
-            
-            // 3. ローカル速度をプレイヤーの向きに合わせて回転させ、ワールド空間での正しい速度ベクトルに変換する
             grabberVelocity = trackingSpaceRotation * localVelocity;
+            AdjustAssistCollider();
+        }
+    }
+
+    private void AdjustAssistCollider()
+    {
+        Vector3 velocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
+        float speed = velocityXZ.magnitude;
+
+        if (speed < 0.01f)
+        {
+            ResetAssistCollider();
+            Debug.Log($"<color=yellow>Assist collider reset due to low speed: {speed}</color>");
+            return;
+        }
+
+        float normalizedSpeed = Mathf.Clamp01(speed / minAssistVelocity);
+        assistTriggerCollider.height = Mathf.Lerp(initialHeight, maxAssistHeight, normalizedSpeed);
+        Quaternion targetRotation = Quaternion.LookRotation(velocityXZ.normalized);
+        transform.rotation = targetRotation;
+    }
+
+    private void ResetAssistCollider()
+    {
+        if (assistTriggerCollider != null)
+        {
+            assistTriggerCollider.height = initialHeight;
+        }
+        if (targetToFollow != null)
+        {
+            transform.position = targetToFollow.position;
+            transform.rotation = targetToFollow.rotation;
         }
     }
 
     [System.Obsolete]
     void OnTriggerEnter(Collider other)
     {
-        // 掴まれていない、または速度が足りない場合は処理を中断
-        // ヒットが許可されていない、掴んでいない、またはパックでない場合は処理しない
         if (!canHit || grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity) return;
 
-        // 接触した相手が"Puck"タグを持っている場合のみ処理を実行
         if (other.CompareTag("Puck"))
         {
-            // if(MotionDataLogger.Instance != null)
-            // {
-            //     MotionDataLogger.Instance.LogAssistedHit(other, assistTriggerCollider, grabbingInteractor);
-            // }
-            EpisodeLogger.Instance.LogHit(this, other, true);
+            Debug.Log($"<color=green>Hit detected with puck: {other.name} at position {other.transform.position}</color>");
+            // アシストの強度を計算 (0.0 - 1.0)
+            float intensity = Mathf.InverseLerp(initialHeight, maxAssistHeight, assistTriggerCollider.height);
 
-            // ヒットフィードバックを提供
-            puckFeedbackController?.ProvideHapticFeedback();
-            puckFeedbackController?.PlayHitSound();
-            puckFeedbackController?.PlayHitEffect(other.ClosestPoint(transform.position));
-            // アシストが作動した場合のみ、打ち返しと半径縮小を実行
-            Debug.Log($"<color=blue>PuckHitController: Assist triggered with velocity {grabberVelocity} collision with {other.gameObject.name}</color>");
+            if (puckFeedbackController != null)
+            {
+                Debug.Log($"<color=blue>Providing feedback with intensity: {intensity}</color>");
+                puckFeedbackController.ProvideFeedback(intensity, other.ClosestPoint(transform.position));
+            }
+            
+            EpisodeLogger.Instance.LogHit(this, other, true);
             TriggerAssist(other);
         }
+    }
+
+    /// <summary>
+    /// ★★★ 新規追加: 指定した時間だけゲームの時間を遅くするコルーチン ★★★
+    /// </summary>
+    private IEnumerator HitStopCoroutine(float duration)
+    {
+        if (duration <= 0) yield break;
+
+        // 元の時間の進み方を保存
+        float originalTimescale = Time.timeScale;
+        Time.timeScale = hitStopTimescale;
+
+        // 時間の進み方の影響を受けないリアルタイム秒数で待機
+        yield return new WaitForSecondsRealtime(duration);
+
+        // 時間の進み方を元に戻す
+        Time.timeScale = originalTimescale;
     }
 
     [System.Obsolete]
@@ -172,79 +224,47 @@ public class PuckHitController : MonoBehaviour
     {
         Rigidbody puckRigidbody = puckCollider.GetComponent<Rigidbody>();
         if (puckRigidbody == null) return;
-
-        // XZ平面上での反射計算
         Vector3 malletPosXZ = new Vector3(transform.position.x, 0, transform.position.z);
         Vector3 puckPosXZ = new Vector3(puckCollider.transform.position.x, 0, puckCollider.transform.position.z);
         Vector3 idealNormalXZ = (malletPosXZ - puckPosXZ).normalized;
         Vector3 grabberVelocityXZ = new Vector3(grabberVelocity.x, 0, grabberVelocity.z);
-        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) *  -1; // 反射ベクトルを反転
+        Vector3 reflectionXZ = Vector3.Reflect(grabberVelocityXZ, idealNormalXZ) * -1;
         float speedXZ = grabberVelocityXZ.magnitude;
         Vector3 finalVelocity = reflectionXZ.normalized * speedXZ * assistImpactMultiplier;
         puckRigidbody.velocity = finalVelocity;
-        Debug.Log($"<color=green>PuckHitController: Puck velocity set to {finalVelocity}</color>");
-
-        HitShrinkCount++;
-        // 4. アシスト成功時に半径を縮小
-        // if (HitShrinkCount % 5 == 0) // 5回ヒットごとに半径を縮小
-        // {
-        //     ShrinkAssistRadius();
-        // }
-        // 5. パックの衝突を一時的に無視する
+        Debug.Log($"<color=green>Assist triggered! New puck velocity: {finalVelocity}</color>");
         DisableAllCollisionsForDuration(ignoreCollisionDuration);
+        // ★★★ 追加: ヒットストップを開始 ★★★
+        float intensity = Mathf.InverseLerp(initialHeight, maxAssistHeight, assistTriggerCollider.height);
+        float hitStopDuration = Mathf.Lerp(minHitStopDuration, maxHitStopDuration, intensity);
         if(planarFollower != null)
         {
-                // PuckHitControllerにはignoreCollisionDurationがないため、
-                // 一時的に固定値（例: 0.2f）を使うか、フィールドを追加してください。
-                planarFollower.PauseFollowing(ignoreCollisionDuration); 
+            planarFollower.PauseFollowing(hitStopDuration); 
         }
     }
 
     public void ShrinkAssistRadius()
     {
         float newRadius = assistTriggerCollider.radius - radiusShrinkAmount;
-        // 半径が最小値より小さくならないように制限
         assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
-        Debug.Log($"<color=orange>Assist Radius shrunk to: {assistTriggerCollider.radius}</color>");
     }
     
-    /// <summary>
-    /// EpisodeLoggerから呼び出され、アシスト半径を設定する
-    /// </summary>
     public void SetRadius(float newRadius)
     {
         assistTriggerCollider.radius = Mathf.Max(newRadius, minRadius);
-        Debug.Log($"<color=orange>Assist Radius set to: {assistTriggerCollider.radius}</color>");
     }
 
     private IEnumerator DisableAllCollisionsForDuration(float duration)
     {
-        canHit = false; // 次のヒット判定を無効化
-
-        // 親オブジェクト（targetToFollow）とその全ての子のコライダーを取得
+        canHit = false;
         Collider[] allPaddleColliders = targetToFollow.GetComponentsInChildren<Collider>();
-
-        // 全てのコライダーを無効化
-        foreach (var col in allPaddleColliders)
-        {
-            col.enabled = false;
-        }
-
-        // 指定した時間だけ待機
+        foreach (var col in allPaddleColliders) col.enabled = false;
         yield return new WaitForSeconds(duration);
-
-        // 全てのコライダーを再度有効化
         foreach (var col in allPaddleColliders)
         {
-            // 待機中にオブジェクトが破棄されている可能性を考慮
-            if (col != null)
-            {
-                col.enabled = true;
-            }
+            if (col != null) col.enabled = true;
         }
-
-        canHit = true; // ヒット判定を再度有効化
-        Debug.Log("<color=lime>All paddle colliders re-enabled.</color>");
+        canHit = true;
     }
 
     void LateUpdate()
@@ -256,4 +276,3 @@ public class PuckHitController : MonoBehaviour
         }
     }
 }
-

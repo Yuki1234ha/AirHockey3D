@@ -1,6 +1,6 @@
 // PuckFeedbackController.cs
 // パックとの接触を検知し、音と振動のフィードバックのみを提供するスクリプト。
-// 打ち返し機能は持ちません。
+// ★★★ エフェクト表示時間も可変になるように修正 ★★★
 
 using UnityEngine;
 using System.Collections;
@@ -10,27 +10,35 @@ using Oculus.Interaction.Input;
 
 public class PuckFeedbackController : MonoBehaviour
 {
-    [Tooltip("判定に使うSphereCollider")]
-    public SphereCollider assistTriggerCollider;
-    [Header("フィードバック設定")]
-    [Tooltip("アシスト機能が作動する、手の最低スイング速度")]
-    public float minAssistVelocity = 1.0f;
+    [Header("サウンド設定")]
     [Tooltip("接触時に再生する効果音")]
     public AudioClip hitSound;
     [Tooltip("効果音を再生するためのAudioSourceコンポーネント")]
     public AudioSource audioSource;
+    
+    [Header("エフェクト設定")]
     [Tooltip("【シーンに配置済みの】ループ再生させるパーティクルエフェクト")]
     public ParticleSystem hitEffect;
-    [Tooltip("エフェクトが見える時間（秒）")]
-    public float effectVisibleDuration = 0.5f;
+    [Tooltip("エフェクトが見える最大時間（秒）")]
+    public float maxEffectVisibleDuration = 0.5f;
+    [Tooltip("エフェクトが見える最小時間（秒）")]
+    public float minEffectVisibleDuration = 0.1f;
+
+
+    [Header("振動設定")]
     [Tooltip("振動の周波数")]
     [Range(0f, 1f)]
     public float vibrationFrequency = 0.8f;
-    [Tooltip("振動の強度")]
+    [Tooltip("振動の最大強度")]
     [Range(0f, 1f)]
-    public float vibrationAmplitude = 0.8f;
-    [Tooltip("振動の継続時間（秒）")]
-    public float vibrationDuration = 0.1f;
+    public float maxVibrationAmplitude = 0.8f;
+    [Tooltip("振動の最小強度")]
+    [Range(0f, 1f)]
+    public float minVibrationAmplitude = 0.2f;
+    [Tooltip("振動の最大継続時間（秒）")]
+    public float maxVibrationDuration = 0.1f;
+    [Tooltip("振動の最小継続時間（秒）")]
+    public float minVibrationDuration = 0.05f;
 
     [Header("Interaction SDK 設定")]
     [Tooltip("親オブジェクトにアタッチされているHandGrabInteractable")]
@@ -39,23 +47,15 @@ public class PuckFeedbackController : MonoBehaviour
     [Header("追従設定")]
     [Tooltip("追従する親オブジェクト（paddle1など）のTransform")]
     public Transform targetToFollow;
-    [Header("連携設定")]
-    [Tooltip("クールダウン状態を参照するためのPuckHitController")]
-    public PuckHitController hitController;
+
     // --- 内部変数 ---
     private IInteractableView interactable;
     private HandGrabInteractor grabbingInteractor = null;
     private readonly Vector3 effectWaitPosition = new Vector3(0, -30, 0);
     private Coroutine returnEffectCoroutine;
-    private Vector3 grabberVelocity;
-    private float initialRadius;
 
     void Awake()
     {
-        // 自身のSphereColliderを取得し、初期半径を保存
-        //assistTriggerCollider = GetComponent<SphereCollider>();
-        initialRadius = assistTriggerCollider.radius;
-        // 自分または親からHandGrabInteractableコンポーネントを探す
         interactable = interactableObject != null ? interactableObject : GetComponentInParent<HandGrabInteractable>();
         if (interactable == null)
         {
@@ -82,13 +82,11 @@ public class PuckFeedbackController : MonoBehaviour
         }
     }
 
-    // 掴んだ手を記録
     private void HandleInteractorViewAdded(IInteractorView interactorView)
     {
         grabbingInteractor = interactorView as HandGrabInteractor;
     }
 
-    // 離した手をリセット
     private void HandleInteractorViewRemoved(IInteractorView interactorView)
     {
         if ((object)interactorView == grabbingInteractor)
@@ -97,55 +95,44 @@ public class PuckFeedbackController : MonoBehaviour
         }
     }
 
-    // パックとの接触を検知
-    // void OnTriggerEnter(Collider other)
-    // {
-    //     // 掴まれていない場合は何もしない
-    //     if (hitController != null && !hitController.canHit) return;
-    //     if (grabbingInteractor == null || hitController.grabberVelocity.magnitude < minAssistVelocity)
-    //     {
-    //         // 掴んでいない、または掴んでいる手の速度が十分でない場合は何もしない
-    //         return;
-    //     }
-    //     //Debug.Log($"<color=green>PuckFeedbackController: {gameObject.name} has collided with {other.gameObject.name}</color>");
-    //     // 接触した相手が"Puck"タグを持っている場合のみフィードバックを返す
-    //     if (other.CompareTag("Puck"))
-    //     {
-    //         // ★★★ ロガーに「アシストなし接触」を通知 ★★★
-    //         if (MotionDataLogger.Instance != null)
-    //         {
-    //             MotionDataLogger.Instance.LogNonAssistedTouch(assistTriggerCollider, grabbingInteractor);
-    //         }
-
-    //         ProvideHapticFeedback();
-    //         PlayHitSound();
-    //         PlayHitEffect(other.ClosestPoint(transform.position));
-    //     }
-    // }
-
-    public void ProvideHapticFeedback()
+    /// <summary>
+    /// 強度を指定して全てのフィードバックを再生するメソッド
+    /// </summary>
+    /// <param name="intensity">フィードバックの強度 (0.0 to 1.0)</param>
+    /// <param name="hitPosition">エフェクトを再生するワールド座標</param>
+    public void ProvideFeedback(float intensity, Vector3 hitPosition)
     {
-        if (grabbingInteractor != null)
+        // ★★★ 修正点: 強度に応じてエフェクト表示時間を計算 ★★★
+        float effectDuration = Mathf.Lerp(minEffectVisibleDuration, maxEffectVisibleDuration, intensity);
+
+        PlayHitSound();
+        PlayHitEffect(hitPosition, effectDuration); // 計算した時間を渡す
+        ProvideHapticFeedback(intensity);
+    }
+
+    private void ProvideHapticFeedback(float intensity)
+    {
+        if (grabbingInteractor != null && grabbingInteractor.Hand != null)
         {
-            IHand hand = grabbingInteractor.Hand;
-            if (hand != null)
-            {
-                OVRInput.Controller controllerToVibrate = (hand.Handedness == Handedness.Left)
-                    ? OVRInput.Controller.LTouch
-                    : OVRInput.Controller.RTouch;
-                StartCoroutine(VibrateForDuration(controllerToVibrate));
-            }
+            float amplitude = Mathf.Lerp(minVibrationAmplitude, maxVibrationAmplitude, intensity);
+            float duration = Mathf.Lerp(minVibrationDuration, maxVibrationDuration, intensity);
+
+            OVRInput.Controller controllerToVibrate = (grabbingInteractor.Hand.Handedness == Handedness.Left)
+                ? OVRInput.Controller.LTouch
+                : OVRInput.Controller.RTouch;
+            
+            StartCoroutine(VibrateForDuration(controllerToVibrate, amplitude, duration));
         }
     }
 
-    private IEnumerator VibrateForDuration(OVRInput.Controller controller)
+    private IEnumerator VibrateForDuration(OVRInput.Controller controller, float amplitude, float duration)
     {
-        OVRInput.SetControllerVibration(vibrationFrequency, vibrationAmplitude, controller);
-        yield return new WaitForSeconds(vibrationDuration);
+        OVRInput.SetControllerVibration(vibrationFrequency, amplitude, controller);
+        yield return new WaitForSeconds(duration);
         OVRInput.SetControllerVibration(0, 0, controller);
     }
 
-    public void PlayHitSound()
+    private void PlayHitSound()
     {
         if (audioSource != null && hitSound != null)
         {
@@ -153,7 +140,8 @@ public class PuckFeedbackController : MonoBehaviour
         }
     }
 
-    public void PlayHitEffect(Vector3 position)
+    // ★★★ 修正点: 引数で表示時間を受け取るように変更 ★★★
+    private void PlayHitEffect(Vector3 position, float duration)
     {
         if (hitEffect == null) return;
 
@@ -163,12 +151,13 @@ public class PuckFeedbackController : MonoBehaviour
         }
 
         hitEffect.transform.position = position;
-        returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition());
+        returnEffectCoroutine = StartCoroutine(ReturnEffectToWaitPosition(duration));
     }
 
-    private IEnumerator ReturnEffectToWaitPosition()
+    // ★★★ 修正点: 引数で表示時間を受け取るように変更 ★★★
+    private IEnumerator ReturnEffectToWaitPosition(float duration)
     {
-        yield return new WaitForSeconds(effectVisibleDuration);
+        yield return new WaitForSeconds(duration);
         hitEffect.transform.position = effectWaitPosition;
     }
 

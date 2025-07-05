@@ -2014,9 +2014,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1432379339}
   - component: {fileID: 1432379343}
-  - component: {fileID: 1432379340}
   - component: {fileID: 1432379344}
   - component: {fileID: 1432379346}
+  - component: {fileID: 1432379347}
   m_Layer: 5
   m_Name: HitArea
   m_TagString: Untagged
@@ -2039,27 +2039,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1676674349}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &1432379340
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432379338}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 1.2
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1432379343
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2101,16 +2080,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minAssistVelocity: 0.5
   assistImpactMultiplier: 15
+  maxAssistHeight: 2.5
   radiusShrinkAmount: 0.05
   minRadius: 0.4
+  maxHitStopDuration: 0.4
+  minHitStopDuration: 0
+  hitStopTimescale: 0.5
   interactableObject: {fileID: 667281157}
   ignoreCollisionDuration: 0.5
   puckFeedbackController: {fileID: 1639101364}
   playerTrackingSpace: {fileID: 1766949279}
-  targetRigidbody: {fileID: 1577599999}
   grabberVelocity: {x: 0, y: 0, z: 0}
   canHit: 1
   targetToFollow: {fileID: 1676674349}
+  targetRigidbody: {fileID: 1577599999}
   planarFollower: {fileID: 1676674354}
 --- !u!114 &1432379346
 MonoBehaviour:
@@ -2137,6 +2120,29 @@ MonoBehaviour:
   wallXLeft: -2.55
   wallXRight: 2.55
   enableLogging: 0
+--- !u!136 &1432379347
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432379338}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.35
+  m_Height: 1
+  m_Direction: 0
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1466459510
 GameObject:
   m_ObjectHideFlags: 0
@@ -3458,18 +3464,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 108332c037bef4101bd6424ab7c4e3e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  assistTriggerCollider: {fileID: 1432379340}
-  minAssistVelocity: 1
   hitSound: {fileID: 8300000, guid: 653f36802be5242d6b2d4c41ac4898d1, type: 3}
   audioSource: {fileID: 1639101362}
   hitEffect: {fileID: 1920227693733659315}
-  effectVisibleDuration: 0.3
+  maxEffectVisibleDuration: 0.5
+  minEffectVisibleDuration: 0.1
   vibrationFrequency: 0.8
-  vibrationAmplitude: 0.8
-  vibrationDuration: 0.1
+  maxVibrationAmplitude: 0.8
+  minVibrationAmplitude: 0.1
+  maxVibrationDuration: 0.3
+  minVibrationDuration: 0.05
   interactableObject: {fileID: 667281157}
   targetToFollow: {fileID: 1676674349}
-  hitController: {fileID: 1432379344}
 --- !u!1 &1673036238
 GameObject:
   m_ObjectHideFlags: 0
