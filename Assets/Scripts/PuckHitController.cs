@@ -14,6 +14,8 @@ public class PuckHitController : MonoBehaviour
     [Header("アシスト設定")]
     [Tooltip("アシスト機能が作動する、手の最低スイング速度")]
     public float minAssistVelocity = 1.0f;
+    [Tooltip("アシスト機能が最大となる、手の最低スイング速度")]
+    public float maxAssistVelocity = 1.0f;
     [Tooltip("アシストヒット時の打撃力を調整する係数")]
     public float assistImpactMultiplier = 1.5f;
     [Tooltip("アシスト判定の最大の長さ（高さ）")]
@@ -160,11 +162,11 @@ public class PuckHitController : MonoBehaviour
             return;
         }
 
-        float normalizedSpeed = Mathf.Clamp01(speed / minAssistVelocity);
+        float normalizedSpeed = Mathf.Clamp01(speed / maxAssistVelocity);
         assistTriggerCollider.height = Mathf.Lerp(initialHeight, maxAssistHeight, normalizedSpeed);
         Quaternion targetRotation = Quaternion.LookRotation(velocityXZ.normalized);
         transform.rotation = targetRotation;
-        Debug.Log($"<color=green>Assist collider adjusted. Height: {assistTriggerCollider.height}, Speed: {speed}</color>");
+        //Debug.Log($"<color=green>Assist collider adjusted. Height: {assistTriggerCollider.height}, Speed: {speed}</color>");
     }
 
     private void ResetAssistCollider()
@@ -183,23 +185,27 @@ public class PuckHitController : MonoBehaviour
     [System.Obsolete]
     void OnTriggerEnter(Collider other)
     {
-        if (!canHit || grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity) return;
+        if (!canHit || grabbingInteractor == null || grabberVelocity.magnitude < minAssistVelocity)
+        {
+            Debug.Log($"<color=red>Hit ignored. CanHit: {canHit}, Grabber Velocity: {grabberVelocity.magnitude}</color>");
+            return;
+        }
 
         if (other.CompareTag("Puck"))
-        {
-            Debug.Log($"<color=green>Hit detected with puck: {other.name} at position {other.transform.position}</color>");
-            // アシストの強度を計算 (0.0 - 1.0)
-            float intensity = Mathf.InverseLerp(initialHeight, maxAssistHeight, assistTriggerCollider.height);
-
-            if (puckFeedbackController != null)
             {
-                Debug.Log($"<color=blue>Providing feedback with intensity: {intensity}</color>");
-                puckFeedbackController.ProvideFeedback(intensity, other.ClosestPoint(transform.position));
+                Debug.Log($"<color=green>Hit detected with puck: {other.name} at position {other.transform.position}</color>");
+                // アシストの強度を計算 (0.0 - 1.0)
+                float intensity = Mathf.InverseLerp(initialHeight, maxAssistHeight, assistTriggerCollider.height);
+
+                if (puckFeedbackController != null)
+                {
+                    Debug.Log($"<color=blue>Providing feedback with intensity: {intensity}</color>");
+                    puckFeedbackController.ProvideFeedback(intensity, other.ClosestPoint(transform.position));
+                }
+
+                EpisodeLogger.Instance.LogHit(this, other, true);
+                TriggerAssist(other);
             }
-            
-            EpisodeLogger.Instance.LogHit(this, other, true);
-            TriggerAssist(other);
-        }
     }
 
     /// <summary>

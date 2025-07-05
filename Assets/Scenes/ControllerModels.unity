@@ -2079,6 +2079,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minAssistVelocity: 0.5
+  maxAssistVelocity: 5
   assistImpactMultiplier: 15
   maxAssistHeight: 2.5
   radiusShrinkAmount: 0.05
