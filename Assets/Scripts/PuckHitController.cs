@@ -164,6 +164,7 @@ public class PuckHitController : MonoBehaviour
         assistTriggerCollider.height = Mathf.Lerp(initialHeight, maxAssistHeight, normalizedSpeed);
         Quaternion targetRotation = Quaternion.LookRotation(velocityXZ.normalized);
         transform.rotation = targetRotation;
+        Debug.Log($"<color=green>Assist collider adjusted. Height: {assistTriggerCollider.height}, Speed: {speed}</color>");
     }
 
     private void ResetAssistCollider()
